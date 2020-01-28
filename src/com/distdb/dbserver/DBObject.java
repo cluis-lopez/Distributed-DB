@@ -49,11 +49,11 @@ public class DBObject<cl> {
 			String [] ret = new String[2];
 			Gson json = new GsonBuilder().setPrettyPrinting().create();
 			try {
-				System.out.println(dataFile);
 				File f = new File(dataFile);
 				f.getParentFile().mkdirs();
 				FileWriter fw = new FileWriter(f);
 				fw.write(json.toJson(obj));
+				fw.flush();
 				fw.close();
 				ret[0] = "OK"; ret[1] ="";
 			} catch (IOException e) {

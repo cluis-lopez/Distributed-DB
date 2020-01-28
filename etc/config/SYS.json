@@ -3,7 +3,8 @@
 "dataPath": "etc/data/SYS", 
 
 "objects" : [
-"User"
+"User",
+"Event"
 ]
 
 

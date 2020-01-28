@@ -4,16 +4,15 @@ import java.util.Date;
 
 import com.distdb.dbserver.DBTemplate;
 
-public class Events extends DBTemplate {
+public class Event extends DBTemplate {
 	String name;
 	Date when;
 	String type;
 	String description;
 	
 	
-	public Events(String name, String type, String description) {
-		super ();
-		this.name = name;
+	public Event(String name, String type, String description) {
+		id = name;
 		this.type = type;
 		this.description = description;
 		this.when = new Date();
