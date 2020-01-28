@@ -49,7 +49,7 @@ public class Database {
 			Class cl;
 			try {
 				cl = Class.forName(defPath + "." + s);
-				DBObject dbo = new DBObject(props.dataPath + "/" + "_data_" + s, cl, log);
+				DBObject dbo = new DBObject(props.dataPath + "/" + "_data_" + s, cl, type, log);
 				dbobjs.put(s, dbo);
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block

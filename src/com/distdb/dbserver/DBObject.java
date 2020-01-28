@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.distdb.dbserver.DistServer.Type;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
@@ -25,11 +26,13 @@ public class DBObject<cl> {
 	private Class<?> cl;
 	private String dataFile;
 	Logger log;
+	Type type;
 
-	public DBObject(String dataFile, Class cl, Logger log) {
+	public DBObject(String dataFile, Class cl, Type type, Logger log) {
 
 		this.cl = cl;
 		this.log = log;
+		this.type = type;
 		this.dataFile = dataFile;
 
 		try {
@@ -38,9 +41,13 @@ public class DBObject<cl> {
 			e.printStackTrace();
 		} catch (FileNotFoundException e) {
 			// El fichero de datos no existe, asi que asumimos que hay que crearlo
-			obj = new HashMap<>();
-			System.err.println("No existe el fichero de datos");
-			// e.printStackTrace();
+			if (type == Type.MASTER) {
+				obj = new HashMap<>();
+				System.err.println("No existe el fichero de datos");
+				log.log(Level.INFO, "Master replica opneing non-exixtent datafile. Assuming new Object collection");
+			} else { //Replica database. Should update from a master node
+				
+			}
 		}
 
 	}
