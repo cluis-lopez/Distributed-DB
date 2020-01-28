@@ -1,0 +1,1 @@
+An Object oriented, NO-SQL, distributed, scalable database with eventual consistency
