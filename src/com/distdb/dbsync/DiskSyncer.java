@@ -14,4 +14,20 @@ public class DiskSyncer implements Runnable {
 		queue = new HashMap<>();
 		queues = new ArrayList<>();
 	}
+
+	@Override
+	public void run() {
+		while (true) { //NOSONAR
+			if (queues.size() == 0)
+				break;
+			for (int i = 0; i<queues.size(); i++) {
+				appendJson(queues.get(i).get)
+			}
+		}
+		
+	}
+	
+	private void appendJson() {
+		
+	}
 }
