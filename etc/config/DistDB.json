@@ -4,11 +4,12 @@
     "clusterPort": 8081,
     
     "nodes": [
-    {"This": "8081"},
+    {"This": "localhost:8081"},
     {"UnaReplica": "192.168.1.10:8082"}],
     
 
     "databases": [
-    	{"Name": "SYS", "DefFile": "SYS.json", "defPath": "com.distdb.SYSDB"}
+    	{"Name": "SYS", "DefFile": "SYS.json", "defPath": "com.distdb.SYSDB"},
+    	{"Name": "TestDB", "DefFile": "TestDB.json", "defPath": "com.distdb.TestDB"}
    ]
 }

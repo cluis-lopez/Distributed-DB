@@ -1,4 +1,4 @@
-package com.distdb.dbserver;
+package com.distdb.dbsync;
 
 public class ClusterPrincipal implements Runnable {
 

@@ -1,0 +1,8 @@
+{
+"dataPath": "etc/data/TestDB", 
+
+"objects" : [
+"UserTest",
+"EventTest"
+]
+}
