@@ -60,7 +60,7 @@ public class DistServer {
 			type = Type.REPLICA;
 		
 		for (Map<String, String> m: props.databases) {
-			System.err.println("Database: " + m.get("Name"));
+			System.err.println("Inicializando Database: " + m.get("Name"));
 			DBServer db =  new DBServer(log, props.databases, type);
 		}
 

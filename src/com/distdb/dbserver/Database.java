@@ -12,6 +12,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 
 import com.distdb.dbserver.DistServer.Type;
+import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -22,15 +23,17 @@ public class Database {
 	private String dbname;
 	private String propsFile;
 	private Type type;
+	private DiskSyncer dSyncer;
 
 	private Map<String, DBObject> dbobjs;
 
-	public Database(Logger log, String name, String config, String defPath, Type type) {
+	public Database(Logger log, String name, String config, String defPath, DiskSyncer dSyncer, Type type) {
 		System.err.println("Opening database " + name + " with file " + config + " at " + defPath);
 
 		this.propsFile = "etc/config/" + config;
 		this.log = log;
 		this.type = type;
+		this.dSyncer = dSyncer;
 		dbname = name;
 		dbobjs = new HashMap<>();
 
@@ -52,7 +55,6 @@ public class Database {
 				DBObject dbo = new DBObject(props.dataPath + "/" + "_data_" + s, cl, type, log);
 				dbobjs.put(s, dbo);
 			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -71,7 +73,7 @@ public class Database {
 			ret[1] = "";
 			for (DBObject o : dbobjs.values()) {
 				temp = new String[2];
-				temp = o.save();
+				temp = o.flush();
 				if (!temp[0].equals("OK"))
 					ret[0] = temp[0];
 			}
@@ -86,8 +88,15 @@ public class Database {
 		return ret;
 	}
 
-	public void sync() {
-
+	public String[] sync() {
+		String ret[] = new String[2];
+		if (type == Type.REPLICA) {
+			
+		} else {
+			ret[0] = "FAIL";
+			ret[1] = "Only replicas must sync";
+		}
+		return ret;
 	}
 
 	public String[] insert(String objectName, Object o) {
@@ -103,6 +112,9 @@ public class Database {
 			Class spcl = cl.getSuperclass();
 			f = spcl.getDeclaredField("id");
 			id = (String) f.get(o);
+			f = spcl.getDeclaredField("onDisk");
+			f.set(o, false);
+			dSyncer.addObject(dbname, id, o);
 		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
 			System.err.println("Algo fue mal con el obeto a insertar");
 			ret[0] = "FAIL";

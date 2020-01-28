@@ -7,21 +7,28 @@ import java.util.Map;
 
 public class DiskSyncer implements Runnable {
 	
-	Map<String, Object> queue;
-	List<Map<String, Object>> queues; //LIFO queue to write changes on disk
+	AddQueue add;
+	List<AddQueue> addQueue; //LIFO queue to write changes on disk
+	int waitTime;
 
-	public DiskSyncer() {
-		queue = new HashMap<>();
-		queues = new ArrayList<>();
+	public DiskSyncer(int waitTime) {
+		add = new AddQueue();
+		addQueue = new ArrayList<>();
+		this.waitTime = waitTime;
 	}
 
+	public void addObject(String database, String id, Object o) {
+		
+	}
+	
+	
 	@Override
 	public void run() {
 		while (true) { //NOSONAR
-			if (queues.size() == 0)
+			if (addQueue.size() == 0)
 				break;
-			for (int i = 0; i<queues.size(); i++) {
-				appendJson(queues.get(i).get)
+			for (int i = 0; i<addQueue.size(); i++) {
+
 			}
 		}
 		
@@ -29,5 +36,12 @@ public class DiskSyncer implements Runnable {
 	
 	private void appendJson() {
 		
+	}
+	
+	private class AddQueue{
+		String database;
+		String objectName;
+		String id;
+		Object o;
 	}
 }

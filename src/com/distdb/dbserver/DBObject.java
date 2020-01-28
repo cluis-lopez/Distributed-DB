@@ -52,13 +52,13 @@ public class DBObject<cl> {
 
 	}
 	
-	public String[] save() {
+	public String[] flush() {
 			String [] ret = new String[2];
 			Gson json = new GsonBuilder().setPrettyPrinting().create();
 			try {
 				File f = new File(dataFile);
 				f.getParentFile().mkdirs();
-				FileWriter fw = new FileWriter(f);
+				FileWriter fw = new FileWriter(f, false); //Not to append. Overwrite the file if any
 				fw.write(json.toJson(obj));
 				fw.flush();
 				fw.close();
