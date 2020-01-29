@@ -20,7 +20,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
-public class DBObject<cl> {
+public class DBObject {
 
 	private Map<String, Object> obj;
 	private Class<?> cl;
@@ -58,7 +58,7 @@ public class DBObject<cl> {
 			try {
 				File f = new File(dataFile);
 				f.getParentFile().mkdirs();
-				FileWriter fw = new FileWriter(f, false); //Not to append. Overwrite the file if any
+				FileWriter fw = new FileWriter(f, false); //Do not append. Overwrite the file if any
 				fw.write(json.toJson(obj));
 				fw.flush();
 				fw.close();
@@ -89,7 +89,7 @@ public class DBObject<cl> {
 		try {
 			Field f = cl.getField(fieldName);
 			if (!f.getType().getName().equals("java.lang.String")) {
-				log.log(Level.INFO, "Searching on non-string fields is not implemented. The field " + f.getName()
+				log.log(Level.INFO, "Searching on non-string fields is not yet implemented. The field " + f.getName()
 						+ " is of type " + f.getType().getName());
 				return ret;
 			}

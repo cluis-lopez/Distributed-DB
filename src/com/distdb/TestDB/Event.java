@@ -1,4 +1,4 @@
-package com.distdb.SYSDB;
+package com.distdb.TestDB;
 
 import java.util.Date;
 

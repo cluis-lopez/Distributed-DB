@@ -10,4 +10,5 @@ are expected. Just insert or remove objects from datastores.
 - Recall objects by id or by simple search (using String fields only in first release).
 - No updates allowed. Retrieve the object, modify fields, then replace the original
 - Rest API to synchronize datasets between database servers
-- Many Master-2-Many Slaves architecture. Single Master, many slaves in first release
+- Many-Master-2-Many-Slaves architecture. Single Master, many slaves in first release
+- Easy to dockerize

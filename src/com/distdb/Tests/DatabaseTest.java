@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import com.distdb.SYSDB.Event;
-import com.distdb.SYSDB.User;
+import com.distdb.TestDB.Event;
+import com.distdb.TestDB.User;
 import com.distdb.dbserver.Database;
 import com.distdb.dbserver.DistServer.Type;
 import com.distdb.dbsync.DiskSyncer;
@@ -32,16 +32,16 @@ public class DatabaseTest {
 	@BeforeAll
 	static void startup() {
 		dsync = new DiskSyncer(0);
-		db = new Database(log, "SYS", "SYS.json", "com.distdb.SYSDB", dsync, Type.MASTER);
+		db = new Database(log, "TestDB", "TestDB.json", "com.distdb.TestDB", dsync, Type.MASTER);
 		u1 = new User("clopez", "clopez@gmail.com", "1234");
 		u2 = new User("mariano", "mrajoy@hotmail.com", "1234");
 		u3 = new User("juanito", "juanito@hotmail.com", "1234");
 		e1 = new Event("Evento1", "Malisimo", "cosa chunga ca'pasao");
 		e2 = new Event("Evento2", "Preocupante", "... al loro ...");
 
-		// Remove all data files from SYS database ... Warning !!!
+		// Remove all data files from TestDB database ... Warning !!!
 
-		File folder = new File("etc/data/SYS/");
+		File folder = new File("etc/data/TestDB/");
 		for (final File f : folder.listFiles()) {
 			if (f.isFile()) {
 				System.out.println("Fichero: " + f.getName());
@@ -116,7 +116,7 @@ public class DatabaseTest {
 	void testStore() {
 		db.close();
 		List<String> result = new ArrayList<>();
-		File folder = new File("etc/data/SYS");
+		File folder = new File("etc/data/TestdB");
 		for (final File f : folder.listFiles())
 			result.add(f.getName());
 		System.out.println(result.get(0));

@@ -28,7 +28,7 @@ public class Database {
 	private Map<String, DBObject> dbobjs;
 
 	public Database(Logger log, String name, String config, String defPath, DiskSyncer dSyncer, Type type) {
-		System.err.println("Opening database " + name + " with file " + config + " at " + defPath);
+		System.err.println("Opening " + (type == Type.MASTER ? "MASTER": "REPLICA") + " database " + name + " with file " + config + " at " + defPath);
 
 		this.propsFile = "etc/config/" + config;
 		this.log = log;
@@ -48,7 +48,7 @@ public class Database {
 
 		for (String s : props.objects) {
 			System.err.println("Instanciando objeto: " + s);
-			System.err.println("Se salvara en: " + props.dataPath + "/" + "_data_" + s);
+			System.err.println("Datafile: " + props.dataPath + "/" + "_data_" + s);
 			Class cl;
 			try {
 				cl = Class.forName(defPath + "." + s);
