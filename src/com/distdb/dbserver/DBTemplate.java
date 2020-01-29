@@ -5,8 +5,8 @@ import java.util.UUID;
 public class DBTemplate {
 
 		public String id;
-		private boolean onDisk;
-		private boolean isValid;
+		public boolean onDisk;
+		public boolean isValid;
 		
 		public DBTemplate() {
 			this.id = UUID.randomUUID().toString();

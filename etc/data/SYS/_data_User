@@ -1,42 +1,22 @@
 {
-  "c04a81a5-2a20-4b00-8ab6-8fa5b720ec88": {
+  "2dd5af07-a4c1-4e48-8d39-1b9a40be7a5d": {
     "name": "clopez",
     "mail": "clopez@gmail.com",
     "password": "1234",
-    "userSince": "Jan 28, 2020 1:52:37 PM",
-    "lastLogin": "Jan 1, 1900 1:52:37 PM",
-    "id": "c04a81a5-2a20-4b00-8ab6-8fa5b720ec88"
+    "userSince": "Jan 29, 2020 1:47:50 AM",
+    "lastLogin": "Jan 1, 1900 1:47:50 AM",
+    "id": "2dd5af07-a4c1-4e48-8d39-1b9a40be7a5d",
+    "onDisk": false,
+    "isValid": true
   },
-  "7af1d9a1-34d0-44bf-bac2-f0e23155af58": {
+  "be0e798c-75d2-45e0-8642-2d711240c19d": {
     "name": "juanito",
     "mail": "juanito@hotmail.com",
     "password": "1234",
-    "userSince": "Jan 28, 2020 1:53:42 PM",
-    "lastLogin": "Jan 1, 1900 1:53:42 PM",
-    "id": "7af1d9a1-34d0-44bf-bac2-f0e23155af58"
-  },
-  "0f3cbd4b-a6b8-49cb-857f-80ce8aa2d088": {
-    "name": "clopez",
-    "mail": "clopez@gmail.com",
-    "password": "1234",
-    "userSince": "Jan 28, 2020 1:53:42 PM",
-    "lastLogin": "Jan 1, 1900 1:53:42 PM",
-    "id": "0f3cbd4b-a6b8-49cb-857f-80ce8aa2d088"
-  },
-  "b2105901-def0-4339-927d-4d1aa197d572": {
-    "name": "juanito",
-    "mail": "juanito@hotmail.com",
-    "password": "1234",
-    "userSince": "Jan 28, 2020 1:52:37 PM",
-    "lastLogin": "Jan 1, 1900 1:52:37 PM",
-    "id": "b2105901-def0-4339-927d-4d1aa197d572"
-  },
-  "26d333f4-7239-40b3-913d-99b29f08f775": {
-    "name": "lolita",
-    "mail": "lolita@gmail.com",
-    "password": "7890",
-    "userSince": "Jan 28, 2020 1:52:37 PM",
-    "lastLogin": "Jan 1, 1900 1:52:37 PM",
-    "id": "26d333f4-7239-40b3-913d-99b29f08f775"
+    "userSince": "Jan 29, 2020 1:47:50 AM",
+    "lastLogin": "Jan 1, 1900 1:47:50 AM",
+    "id": "be0e798c-75d2-45e0-8642-2d711240c19d",
+    "onDisk": false,
+    "isValid": true
   }
 }

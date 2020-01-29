@@ -19,17 +19,20 @@ import com.distdb.SYSDB.Event;
 import com.distdb.SYSDB.User;
 import com.distdb.dbserver.Database;
 import com.distdb.dbserver.DistServer.Type;
+import com.distdb.dbsync.DiskSyncer;
 
 @TestMethodOrder(OrderAnnotation.class)
 public class DatabaseTest {
 	static Logger log = Logger.getLogger("DistServer");
+	static DiskSyncer dsync;
 	static Database db;
 	static User u1, u2, u3, u4;
 	static Event e1, e2, e3;
 
 	@BeforeAll
 	static void startup() {
-		db = new Database(log, "SYS", "SYS.json", "com.distdb.SYSDB", Type.MASTER);
+		dsync = new DiskSyncer(0);
+		db = new Database(log, "SYS", "SYS.json", "com.distdb.SYSDB", dsync, Type.MASTER);
 		u1 = new User("clopez", "clopez@gmail.com", "1234");
 		u2 = new User("mariano", "mrajoy@hotmail.com", "1234");
 		u3 = new User("juanito", "juanito@hotmail.com", "1234");
