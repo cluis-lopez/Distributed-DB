@@ -5,20 +5,27 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.dbserver.DistServer.Type;
+import com.distdb.dbserver.DistServer.DBType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 public class DBObject {
 
@@ -26,25 +33,26 @@ public class DBObject {
 	private Class<?> cl;
 	private String dataFile;
 	Logger log;
-	Type type;
+	DBType type;
+	java.lang.reflect.Type fooType = new TypeToken<Map<String, Object>>(){}.getType(); 
 
-	public DBObject(String dataFile, Class cl, Type type, Logger log) {
+	public DBObject(String dataFile, Class cl, DBType type, Logger log) {
 
 		this.cl = cl;
 		this.log = log;
 		this.type = type;
 		this.dataFile = dataFile;
 
-		try {
-			obj = (Map<String, Object>) new Gson().fromJson(new FileReader(dataFile), HashMap.class);
+		try {  
+			obj = new Gson().fromJson(new FileReader(dataFile), fooType);
 		} catch (JsonSyntaxException | JsonIOException e) {
 			e.printStackTrace();
 		} catch (FileNotFoundException e) {
 			// El fichero de datos no existe, asi que asumimos que hay que crearlo
-			if (type == Type.MASTER) {
+			if (type == DBType.MASTER) {
 				obj = new HashMap<>();
 				System.err.println("No existe el fichero de datos");
-				log.log(Level.INFO, "Master replica opneing non-exixtent datafile. Assuming new Object collection");
+				log.log(Level.INFO, "Master opening non-exixtent datafile. Assuming new Object collection");
 			} else { //Replica database. Should update from a master node
 				
 			}
@@ -56,10 +64,19 @@ public class DBObject {
 			String [] ret = new String[2];
 			Gson json = new GsonBuilder().setPrettyPrinting().create();
 			try {
+				String content = json.toJson(obj, fooType);
+				String signature = json.toJson(new Signature(content));
+				String signatureFile = dataFile.replace("_data_", "_signature_");
 				File f = new File(dataFile);
 				f.getParentFile().mkdirs();
 				FileWriter fw = new FileWriter(f, false); //Do not append. Overwrite the file if any
-				fw.write(json.toJson(obj));
+				fw.write(content);
+				fw.flush();
+				fw.close();
+				f = new File(signatureFile);
+				f.getParentFile().mkdirs();
+				fw = new FileWriter(f, false); //Do not append. Overwrite the file if any
+				fw.write(signature);
 				fw.flush();
 				fw.close();
 				ret[0] = "OK"; ret[1] ="";
@@ -113,5 +130,31 @@ public class DBObject {
 	
 	public void close() {
 		obj = null;
+	}
+	
+	private String signFile (String content) {
+		String ret = "";
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(content.getBytes("UTF8"));
+			ret = new String(Base64.getEncoder().encode(hash));
+		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+			System.err.println("Invalid algorithm. This should never happen");
+			log.log(Level.SEVERE, "Cannnot sign files. Invalid algorithm. This should never happen");
+			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+		}
+		
+		return ret;
+		
+	}
+	
+	private class Signature {
+		Date date;
+		String signature;
+		
+		public Signature (String content) {
+			this.date = new Date();
+			this.signature = signFile(content);
+		}
 	}
 }

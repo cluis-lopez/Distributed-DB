@@ -11,7 +11,7 @@ import java.util.UUID;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 
-import com.distdb.dbserver.DistServer.Type;
+import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
@@ -22,13 +22,13 @@ public class Database {
 	private Logger log;
 	private String dbname;
 	private String propsFile;
-	private Type type;
+	private DBType type;
 	private DiskSyncer dSyncer;
 
 	private Map<String, DBObject> dbobjs;
 
-	public Database(Logger log, String name, String config, String defPath, DiskSyncer dSyncer, Type type) {
-		System.err.println("Opening " + (type == Type.MASTER ? "MASTER": "REPLICA") + " database " + name + " with file " + config + " at " + defPath);
+	public Database(Logger log, String name, String config, String defPath, DiskSyncer dSyncer, DBType type) {
+		System.err.println("Opening " + (type == DBType.MASTER ? "MASTER": "REPLICA") + " database " + name + " with file " + config + " at " + defPath);
 
 		this.propsFile = "etc/config/" + config;
 		this.log = log;
@@ -67,7 +67,7 @@ public class Database {
 
 	public String[] close() {
 		String ret[] = new String[2];
-		if (type == Type.MASTER) {
+		if (type == DBType.MASTER) {
 			String[] temp = new String[2];
 			ret[0] = "OK";
 			ret[1] = "";
@@ -90,7 +90,7 @@ public class Database {
 
 	public String[] sync() {
 		String ret[] = new String[2];
-		if (type == Type.REPLICA) {
+		if (type == DBType.REPLICA) {
 			
 		} else {
 			ret[0] = "FAIL";

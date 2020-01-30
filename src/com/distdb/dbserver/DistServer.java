@@ -17,7 +17,7 @@ import com.google.gson.JsonSyntaxException;
 public class DistServer {
 
 	static Logger log = Logger.getLogger("DistServer");
-	public enum Type {
+	public enum DBType {
 		MASTER,
 		REPLICA
 	}
@@ -52,12 +52,12 @@ public class DistServer {
 			e.printStackTrace();
 		}
 		
-		Type type;
+		DBType type;
 		
 		if (props.ThisNode.equals("Master") || props.ThisNode.equals("MASTER"))
-			type = Type.MASTER;
+			type = DBType.MASTER;
 		else
-			type = Type.REPLICA;
+			type = DBType.REPLICA;
 		
 		for (Map<String, String> m: props.databases) {
 			System.err.println("Inicializando Database: " + m.get("Name"));

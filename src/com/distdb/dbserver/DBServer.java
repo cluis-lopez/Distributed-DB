@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import com.distdb.dbserver.DistServer.Type;
+import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;
 
 public class DBServer {
@@ -14,9 +14,9 @@ public class DBServer {
 		private List<Database> dbs = new ArrayList();
 		private DiskSyncer dSyncer = null;
 		
-		public DBServer(Logger log, List<Map<String,String>> databases, Type type) {
+		public DBServer(Logger log, List<Map<String,String>> databases, DBType type) {
 			this.log = log;
-			if (type == Type.MASTER) {
+			if (type == DBType.MASTER) {
 				dSyncer = new DiskSyncer(1000*60*5); //Sync every 5 minutes
 			}
 			

@@ -1,12 +1,15 @@
 package com.distdb.Tests;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,7 +21,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import com.distdb.TestDB.Event;
 import com.distdb.TestDB.User;
 import com.distdb.dbserver.Database;
-import com.distdb.dbserver.DistServer.Type;
+import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;
 
 @TestMethodOrder(OrderAnnotation.class)
@@ -31,24 +34,30 @@ public class DatabaseTest {
 
 	@BeforeAll
 	static void startup() {
+
+		// Remove all data files from TestDB database ... Warning !!!
+
+		Path folder = Paths.get("etc/data/TestDB/");
+		Stream<Path> list;
+		try {
+			list = Files.list(folder);
+
+			for (Path f : list.toArray(Path[]::new)) {
+				Files.delete(f);
+				System.err.println("Borrado el fichero: " + f.toString() + " ");
+			}
+			list.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		dsync = new DiskSyncer(0);
-		db = new Database(log, "TestDB", "TestDB.json", "com.distdb.TestDB", dsync, Type.MASTER);
+		db = new Database(log, "TestDB", "TestDB.json", "com.distdb.TestDB", dsync, DBType.MASTER);
 		u1 = new User("clopez", "clopez@gmail.com", "1234");
 		u2 = new User("mariano", "mrajoy@hotmail.com", "1234");
 		u3 = new User("juanito", "juanito@hotmail.com", "1234");
 		e1 = new Event("Evento1", "Malisimo", "cosa chunga ca'pasao");
 		e2 = new Event("Evento2", "Preocupante", "... al loro ...");
-
-		// Remove all data files from TestDB database ... Warning !!!
-
-		File folder = new File("etc/data/TestDB/");
-		for (final File f : folder.listFiles()) {
-			if (f.isFile()) {
-				System.out.println("Fichero: " + f.getName());
-				boolean b = f.delete();
-				System.err.println("Borrado el fichero: " + f.getName()+ " "+ b);
-			}
-		}
 	}
 
 	@Test
@@ -120,7 +129,7 @@ public class DatabaseTest {
 		for (final File f : folder.listFiles())
 			result.add(f.getName());
 		System.out.println(result.get(0));
-		Assertions.assertEquals(2, result.size());
+		Assertions.assertEquals(4, result.size());
 		Assertions.assertEquals(true, result.contains("_data_User"));
 		Assertions.assertEquals(true, result.contains("_data_Event"));
 
@@ -128,6 +137,14 @@ public class DatabaseTest {
 
 	@Test
 	void testReOpen() {
-
+		db = new Database(log, "TestDB", "TestDB.json", "com.distdb.TestDB", dsync, DBType.MASTER);
+		Map<String, String> map = db.getInfo();
+		Assertions.assertEquals(3, Integer.parseInt(map.get("User")));
+		Assertions.assertEquals(2, Integer.parseInt(map.get("Event")));
+		
+		u4 = (User) db.getById("User", u1.id);
+		Assertions.assertEquals(u4, u1);
+		e3 = (Event) db.getById("Event", "Evento2");
+		Assertions.assertEquals(e2, e3);
 	}
 }
