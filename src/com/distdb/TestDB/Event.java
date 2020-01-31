@@ -5,10 +5,10 @@ import java.util.Date;
 import com.distdb.dbserver.DBTemplate;
 
 public class Event extends DBTemplate {
-	String name;
-	Date when;
-	String type;
-	String description;
+	public String name;
+	public Date when;
+	public String type;
+	public String description;
 	
 	
 	public Event(String name, String type, String description) {

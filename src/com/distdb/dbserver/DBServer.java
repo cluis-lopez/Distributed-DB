@@ -14,14 +14,14 @@ public class DBServer {
 		private List<Database> dbs = new ArrayList();
 		private DiskSyncer dSyncer = null;
 		
-		public DBServer(Logger log, List<Map<String,String>> databases, DBType type) {
+		public DBServer(Logger log, List<Map<String,String>> databases, DBType serverType, int syncTime) {
 			this.log = log;
-			if (type == DBType.MASTER) {
-				dSyncer = new DiskSyncer(1000*60*5); //Sync every 5 minutes
+			if (serverType == DBType.MASTER) {
+				dSyncer = new DiskSyncer(1000*syncTime); //Sync every syncTime seconds
 			}
 			
 			for (Map<String, String> m: databases) {
-				Database db = new Database(log, m.get("Name"), m.get("DefFile"), m.get("defPath"), dSyncer, type);
+				Database db = new Database(log, m.get("Name"), m.get("DefFile"), m.get("defPath"), dSyncer, serverType);
 				dbs.add(db);
 			}
 		}

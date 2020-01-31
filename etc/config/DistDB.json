@@ -2,6 +2,7 @@
     "ThisNode": "Master",
     "dataPort": 8080,
     "clusterPort": 8081,
+    "syncTime": 30,
     
     "nodes": [
     {"This": "localhost:8081"},

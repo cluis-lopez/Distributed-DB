@@ -52,16 +52,16 @@ public class DistServer {
 			e.printStackTrace();
 		}
 		
-		DBType type;
+		DBType serverType;
 		
 		if (props.ThisNode.equals("Master") || props.ThisNode.equals("MASTER"))
-			type = DBType.MASTER;
+			serverType = DBType.MASTER;
 		else
-			type = DBType.REPLICA;
+			serverType = DBType.REPLICA;
 		
 		for (Map<String, String> m: props.databases) {
 			System.err.println("Inicializando Database: " + m.get("Name"));
-			DBServer db =  new DBServer(log, props.databases, type);
+			DBServer db =  new DBServer(log, props.databases, serverType, props.syncTime);
 		}
 
 	}
@@ -70,6 +70,7 @@ public class DistServer {
 		String ThisNode;
 		int  dataPort;
 		int clusterPort;
+		int syncTime;
 		List<Map<String, String>> nodes;
 		List<Map<String, String>> databases;
 	}

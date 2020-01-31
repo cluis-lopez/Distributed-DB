@@ -3,6 +3,7 @@ package com.distdb.dbserver;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +17,7 @@ import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 public class Database {
 
@@ -47,7 +49,7 @@ public class Database {
 		}
 
 		for (String s : props.objects) {
-			System.err.println("Instanciando objeto: " + s);
+			System.err.println("Instanciando la colección de objetos: " + s);
 			System.err.println("Datafile: " + props.dataPath + "/" + "_data_" + s);
 			Class cl;
 			try {
@@ -85,6 +87,7 @@ public class Database {
 		for (DBObject o : dbobjs.values())
 			o.close();
 		dbobjs = null;
+		System.err.println("Cerrando la base de datos " + dbname);
 		return ret;
 	}
 
@@ -114,7 +117,7 @@ public class Database {
 			id = (String) f.get(o);
 			f = spcl.getDeclaredField("onDisk");
 			f.set(o, false);
-			dSyncer.addObject(dbname, id, o);
+			dSyncer.addObject(dbname, objectName, id, o);
 		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
 			System.err.println("Algo fue mal con el obeto a insertar");
 			ret[0] = "FAIL";

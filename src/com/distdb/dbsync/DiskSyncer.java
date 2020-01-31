@@ -7,18 +7,16 @@ import java.util.Map;
 
 public class DiskSyncer implements Runnable {
 	
-	AddQueue add;
-	List<AddQueue> addQueue; //LIFO queue to write changes on disk
+	List<LoggedObj> addQueue; //LIFO queue to write changes on disk
 	int waitTime;
 
 	public DiskSyncer(int waitTime) {
-		add = new AddQueue();
 		addQueue = new ArrayList<>();
 		this.waitTime = waitTime;
 	}
 
-	public void addObject(String database, String id, Object o) {
-		
+	public void addObject(String database,String objectName, String id, Object o) {
+		addQueue.add(new LoggedObj(database, objectName, id, o));
 	}
 	
 	
@@ -38,10 +36,17 @@ public class DiskSyncer implements Runnable {
 		
 	}
 	
-	private class AddQueue{
+	private class LoggedObj{
 		String database;
 		String objectName;
 		String id;
 		Object o;
+		
+		public LoggedObj(String database, String objectName, String id, Object o) {
+			this.database = database;
+			this.objectName = objectName;
+			this.id = id;
+			this.o = o;
+		}
 	}
 }
