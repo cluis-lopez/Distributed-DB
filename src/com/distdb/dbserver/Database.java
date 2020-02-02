@@ -3,13 +3,11 @@ package com.distdb.dbserver;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.logging.FileHandler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.distdb.dbserver.DistServer.DBType;
@@ -17,18 +15,18 @@ import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 
 public class Database {
 
 	private Logger log;
 	private String dbname;
+	private String dataPath;
 	private String propsFile;
 	private DBType type;
 	private DiskSyncer dSyncer;
 
 	private Map<String, DBObject> dbobjs;
-
+	
 	public Database(Logger log, String name, String config, String defPath, DiskSyncer dSyncer, DBType type) {
 		System.err.println("Opening " + (type == DBType.MASTER ? "MASTER": "REPLICA") + " database " + name + " with file " + config + " at " + defPath);
 
@@ -45,21 +43,27 @@ public class Database {
 		try {
 			props = json.fromJson(new FileReader(propsFile), Properties.class);
 		} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Cannot read definition file for database : " + dbname);
+			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 		}
 
+		this.dataPath = props.dataPath;
+		
 		for (String s : props.objects) {
 			System.err.println("Instanciando la colección de objetos: " + s);
-			System.err.println("Datafile: " + props.dataPath + "/" + "_data_" + s);
+			System.err.println("Datafile: " + dataPath + "/" + "_data_" + s);
 			Class cl;
 			try {
 				cl = Class.forName(defPath + "." + s);
-				DBObject dbo = new DBObject(props.dataPath + "/" + "_data_" + s, cl, type, log);
+				DBObject dbo = new DBObject(dataPath + "/" + "_data_" + s, cl, type, log);
 				dbobjs.put(s, dbo);
 			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
+				log.log(Level.SEVERE, "Cannot instantiate object collection for objects : " + s);
+				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 			}
 		}
+		
+		dSyncer.addDatabase(dbname, dbobjs, dataPath);
 
 	}
 
@@ -88,6 +92,7 @@ public class Database {
 			o.close();
 		dbobjs = null;
 		System.err.println("Cerrando la base de datos " + dbname);
+		log.log(Level.INFO, "Closing database: " + dbname);
 		return ret;
 	}
 
@@ -117,7 +122,6 @@ public class Database {
 			id = (String) f.get(o);
 			f = spcl.getDeclaredField("onDisk");
 			f.set(o, false);
-			dSyncer.addObject(dbname, objectName, id, o);
 		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
 			System.err.println("Algo fue mal con el obeto a insertar");
 			ret[0] = "FAIL";
@@ -127,6 +131,8 @@ public class Database {
 		}
 
 		dbobjs.get(objectName).insert(id, o);
+		if (type == DBType.MASTER && dSyncer != null)
+			dSyncer.addObject(dbname, objectName, id, o);
 		ret[0] = "OK";
 		ret[1] = "Inserted new " + objectName + " with id " + id;
 		return ret;
@@ -165,6 +171,7 @@ public class Database {
 
 	private class Properties {
 		String dataPath;
+		
 		List<String> objects;
 	}
 

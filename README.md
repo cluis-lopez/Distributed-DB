@@ -1,4 +1,4 @@
-An Object oriented, NoSQL, distributed, scalable database with lazy eventual consistency
+An Object oriented, memory based, NoSQL, distributed, scalable database with lazy eventual consistency
 
 This project tries to emulate what guys at Google and Amazon did with their DataStores or Dynamos.
 Small fingerprint databases assuming read/write ratios of 10.000/1 or above where consistency is 
