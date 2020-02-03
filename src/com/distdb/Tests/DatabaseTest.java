@@ -51,7 +51,7 @@ public class DatabaseTest {
 			e.printStackTrace();
 		}
 		
-		dsync = new DiskSyncer(log,0);
+		dsync = new DiskSyncer(log,30);
 		db = new Database(log, "TestDB", "TestDB.json", "com.distdb.TestDB", dsync, DBType.MASTER);
 		u1 = new User("clopez", "clopez@gmail.com", "1234");
 		u2 = new User("mariano", "mrajoy@hotmail.com", "1234");
@@ -77,6 +77,12 @@ public class DatabaseTest {
 		Assertions.assertEquals("OK", test4[0]);
 		String[] test5 = db.insert("Event", e2);
 		Assertions.assertEquals("OK", test5[0]);
+		//Insercion de objeto no existente
+		String [] test6 = db.insert("ObjetoNoExistente", e2);
+		Assertions.assertEquals("Invalid Object", test6[1]);
+		//Insercion de objeto existente pero con la clase confundida
+		String [] test7 = db.insert("User", e2);
+		Assertions.assertEquals("Invalid Object", test7[1]);
 		map = db.getInfo();
 		Assertions.assertEquals(2, Integer.parseInt(map.get("Event")));
 
@@ -143,8 +149,26 @@ public class DatabaseTest {
 				
 		Object o = db.getById("User", u1.id);
 		System.err.println("Tipo de objeto " + o.getClass().getTypeName());
+		User u5 = (User) db.getById("User", u3.id);
+		Assertions.assertEquals(true, u5.id.equals(u3.id));
 		//Assertions.assertEquals(u4, u1);
 		e4 = (Event) db.getById("Event", "Evento2");
 		Assertions.assertEquals("Preocupante", e4.type);
+		
+		 //Insertamos nuevos valores en la coleccion de usuarios
+		User u10 = new User("nuevoclopez", "nuevoclopez@gmail.com", "1234");
+		User u11 = new User("nuevalolita", "nuevalolita@hotamil.com", "1234");
+		Event e10= new Event("Evento10", "Jodidillo", "... al loro ...");
+		db.insert("User", u10);
+		db.insert("User", u11);
+		db.insert("Event", e10);
+		db.close();
+		
+		//Reabrimos la BBDD Ahora debería de haber 5 usuarios y 3 eventos
+		
+		db = new Database(log, "TestDB", "TestDB.json", "com.distdb.TestDB", dsync, DBType.MASTER);
+		Map<String, String> map2 = db.getInfo();
+		Assertions.assertEquals(5, Integer.parseInt(map2.get("User")));
+		Assertions.assertEquals(3, Integer.parseInt(map2.get("Event")));
 	}
 }

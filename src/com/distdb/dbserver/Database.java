@@ -110,9 +110,10 @@ public class Database {
 	public String[] insert(String objectName, Object o) {
 		String ret[] = new String[2];
 		Class<?> cl = o.getClass();
-		if (!objectName.equals(cl.getName())) {
+		if (!objectName.equals(cl.getSimpleName())) {
 			ret[0] = "FAIL";
 			ret[1] = "Invalid Object";
+			return ret;
 		}
 		Field f = null;
 		String id = null;
@@ -131,8 +132,9 @@ public class Database {
 		}
 
 		dbobjs.get(objectName).insert(id, o);
+		
 		if (type == DBType.MASTER && dSyncer != null)
-			dSyncer.addObject(dbname, objectName, id, o);
+			dSyncer.enQueue("insert", dbname, objectName, id, o);
 		ret[0] = "OK";
 		ret[1] = "Inserted new " + objectName + " with id " + id;
 		return ret;
@@ -144,6 +146,8 @@ public class Database {
 		ret[1] = "Object does not exist";
 		if (dbobjs.get(objectName).getById(id) != null) {
 			dbobjs.get(objectName).remove(id);
+			if (type == DBType.MASTER && dSyncer != null)
+				dSyncer.enQueue("remove", dbname, objectName, id, null);
 			ret[0] = "OK";
 			ret[1] = "Remove object with id " + id;
 		}
