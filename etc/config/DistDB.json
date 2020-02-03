@@ -11,6 +11,7 @@
 
     "databases": [
     	{"name": "SYS", "defFile": "SYS.json", "defPath": "com.distdb.SYSDB"},
-    	{"ame": "TestDB", "defFile": "TestDB.json", "defPath": "com.distdb.TestDB"}
+    	{"name": "TestDB1", "defFile": "TestDB1.json", "defPath": "com.distdb.TestDB1"},
+    	{"name": "TestDB2", "defFile": "TestDB2.json", "defPath": "com.distdb.TestDB2"}
    ]
 }

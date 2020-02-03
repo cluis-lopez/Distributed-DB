@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import com.distdb.TestDB.Event;
-import com.distdb.TestDB.User;
+import com.distdb.TestDB1.Event;
+import com.distdb.TestDB1.User;
 import com.distdb.dbserver.Database;
 import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;

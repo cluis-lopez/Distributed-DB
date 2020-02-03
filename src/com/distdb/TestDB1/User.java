@@ -1,4 +1,4 @@
-package com.distdb.TestDB;
+package com.distdb.TestDB1;
 
 import java.util.Calendar;
 import java.util.Date;

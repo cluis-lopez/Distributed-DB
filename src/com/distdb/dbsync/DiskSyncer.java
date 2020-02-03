@@ -1,5 +1,6 @@
 package com.distdb.dbsync;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,11 +18,11 @@ import com.google.gson.reflect.TypeToken;
 
 public class DiskSyncer implements Runnable {
 
-	Map<String, List<LoggedOps>> dbQueue;
-	Map<String, String> dataPaths;
-	int waitTime;
-	Logger log;
-	int sequence;
+	public Map<String, List<LoggedOps>> dbQueue;
+	public Map<String, String> dataPaths;
+	public int waitTime;
+	private Logger log;
+	private int sequence;
 
 	public DiskSyncer(Logger log, int waitTime) {
 		this.log = log;
@@ -44,19 +45,22 @@ public class DiskSyncer implements Runnable {
 	@Override
 	public void run() {
 		Gson json = new GsonBuilder().setPrettyPrinting().create();
-		java.lang.reflect.Type dataType = TypeToken.getParameterized(HashMap.class, List.class, LoggedOps.class)
+		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class)
 				.getType();
 		while (true) { // NOSONAR
-			if (dbQueue.isEmpty())
-				break;
+			if (isEmpty())
+				continue;
 			for (String s : dbQueue.keySet()) {
-				log.log(Level.INFO, "Logging delayed operations for Database " + s);
-				String dataFile = dataPaths.get(s) + "_logging_" + sequence + "_";
-				FileWriter fw;
+				log.log(Level.INFO, "Logging " + dbQueue.get(s).size() + " delayed operations for Database " + s);
+				String dataFile = dataPaths.get(s) + "_logging_" + sequence;
+				File f = new File(dataFile);
+				f.getParentFile().mkdirs();
 				try {
-					fw = new FileWriter(dataFile, false);
-					fw.write(json.toJson(dbQueue, dataType));
+					FileWriter fw = new FileWriter(f, false);
+					fw.write(json.toJson(dbQueue.get(s), dataType));
+					fw.flush();
 					fw.close();
+					dbQueue.get(s).clear();
 				} catch (IOException e) {
 					log.log(Level.SEVERE, "Cannot update logging operations on file: " + dataPaths.get(s) + "_logging_"
 							+ sequence + "_");
@@ -70,13 +74,26 @@ public class DiskSyncer implements Runnable {
 				log.log(Level.SEVERE, "Interrupted Syncer");
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 			}
+			sequence ++;
 		}
 	}
 
+	public Map<String, String> getInfo(){
+		Map<String, String> ret = new HashMap<>();
+		return ret;
+	}
 	private void rebuildDatabase(String dbname) {
 
 	}
 
+	private boolean isEmpty() {
+		boolean ret = true;
+		for(String s: dbQueue.keySet()) {
+			ret = ret && dbQueue.get(s).isEmpty();
+		}
+		return ret;
+	}
+	
 	private class LoggedOps {
 		String op;
 		String objectName;

@@ -1,0 +1,9 @@
+{
+
+"dataPath": "etc/data/TestDB2",
+
+"objects" : [
+"Brands",
+"Cars"
+]
+}

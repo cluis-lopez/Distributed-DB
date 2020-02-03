@@ -1,6 +1,6 @@
 {
 
-"dataPath": "etc/data/TestDB",
+"dataPath": "etc/data/TestDB1",
 
 "objects" : [
 "User",

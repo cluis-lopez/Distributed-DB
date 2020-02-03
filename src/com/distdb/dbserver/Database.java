@@ -19,13 +19,13 @@ import com.google.gson.JsonSyntaxException;
 public class Database {
 
 	private Logger log;
-	private String dbname;
-	private String dataPath;
+	public String dbname;
+	public String dataPath;
 	private String propsFile;
 	private DBType type;
 	private DiskSyncer dSyncer;
 
-	private Map<String, DBObject> dbobjs;
+	public Map<String, DBObject> dbobjs;
 	
 	public Database(Logger log, String name, String config, String defPath, DiskSyncer dSyncer, DBType type) {
 		System.err.println("Opening " + (type == DBType.MASTER ? "MASTER": "REPLICA") + " database " + name + " with file " + config + " at " + defPath);
@@ -63,7 +63,7 @@ public class Database {
 			}
 		}
 		
-		dSyncer.addDatabase(dbname, dbobjs, dataPath);
+		dSyncer.addDatabase(dbname, dbobjs, dataPath+"/");
 
 	}
 
