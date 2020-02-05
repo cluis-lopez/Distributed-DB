@@ -1,9 +1,10 @@
 {
-
-"dataPath": "etc/data/TestDB1",
-
-"objects" : [
-"User",
-"Event"
-]
+  "dataPath": "etc/data/TestDB1",
+  "isProperlyShutdown": false,
+  "isAvailable": false,
+  "isReadOnly": false,
+  "objects": [
+    "User",
+    "Event"
+  ]
 }

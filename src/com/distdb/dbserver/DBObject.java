@@ -54,7 +54,8 @@ public class DBObject<cl> {
 			}
 			obj = new Gson().fromJson(content, dataType);
 		} catch (JsonSyntaxException | JsonIOException e) {
-			e.printStackTrace();
+			log.log(Level.WARNING, "WARNING !! Malformed Json file");
+			log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
 		} catch (IOException e) {
 			// El fichero de datos no existe, asi que asumimos que hay que crearlo
 			if (type == DBType.MASTER) {

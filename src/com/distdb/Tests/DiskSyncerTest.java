@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -28,7 +29,7 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 class DiskSyncerTest {
 
 	static Logger log = Logger.getLogger("DistServer");
-	static final int waitTime = 30 * 1000;
+	static final int waitTime = 10 * 1000;
 	static Database db1;
 	static Database db2;
 	static DiskSyncer dSyncer;
@@ -62,7 +63,7 @@ class DiskSyncerTest {
 	}
 
 	@Test
-	void testAddDatabase() {
+	void testAddDatabaser() {
 		dSyncer.addDatabase("TestDB1", db1.dbobjs, db1.dataPath);
 		dSyncer.addDatabase("TestDB2", db2.dbobjs, db2.dataPath);
 		Assertions.assertEquals(2, dSyncer.dataPaths.size());
@@ -70,8 +71,9 @@ class DiskSyncerTest {
 		Assertions.assertEquals(0, dSyncer.dbQueue.get("TestDB1").size());
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
-	void testEnQueue() {
+	void testDiskSyncer() {
 		Thread t = new Thread(dSyncer);
 		t.start();
 
@@ -93,28 +95,50 @@ class DiskSyncerTest {
 		Assertions.assertEquals(3, dSyncer.dbQueue.get("TestDB1").size());
 		Assertions.assertEquals(4, dSyncer.dbQueue.get("TestDB2").size());
 
-		// Wait for the Sysncer to finish
+		// Wait for the Syncer to update disk logs
 
 		try {
-			Thread.sleep(40000);
+			Thread.sleep(20000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 
-		// Now add a new element and remove firat elementsfor ach dataset
+		// Now add a new element and remove first elements for each dataset
 
 		db1.remove("User", u1.id);
 		db1.remove("Event", e1.id);
 		db2.remove("Brands", b1.id);
 		db2.remove("Cars", c1.id);
 		db1.insert("Event",  new Event("Evento2", "Peligroso", "no hay mensaje"));
-		// Wait for the Sysncer to finish
+		// Wait for the Syncer to finish
 
 		try {
-			Thread.sleep(40000);
+			Thread.sleep(20000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+		
+		Map<String, String> mapa = dSyncer.getInfoFromLogFiles();
+		Assertions.assertEquals(4, Integer.parseInt(mapa.get("Pending inserts for TestDB1")));
+		Assertions.assertEquals(4, Integer.parseInt(mapa.get("Pending inserts for TestDB2")));
+		Assertions.assertEquals(2, Integer.parseInt(mapa.get("Pending removes for TestDB1")));
+		Assertions.assertEquals(2, Integer.parseInt(mapa.get("Pending removes for TestDB2")));
+		
+		db1.close();
+		db2.close();
+		dSyncer.kill();
+		dSyncer = null;
+		//Reopen databases
+		
+		dSyncer = new DiskSyncer(log, waitTime);
+		db1 = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dSyncer, DBType.MASTER);
+		db2 = new Database(log, "TestDB2", "TestDB2.json", "com.distdb.TestDB2", dSyncer, DBType.MASTER);
+		dSyncer.addDatabase("TestDB1", db1.dbobjs, db1.dataPath);
+		dSyncer.addDatabase("TestDB2", db2.dbobjs, db2.dataPath);
+		
+		Assertions.assertEquals(b2.id, ((Brands) db2.getById("Brands", b2.id)).id);
+		Assertions.assertEquals("Ferrari", db2.searchByField("Brands", "name", "ari").get(0));
+		
 	}
 
 }

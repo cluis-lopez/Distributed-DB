@@ -1,4 +1,9 @@
 {
+"dataPath": "etc/data/SYS",
+"isProperlyShutdown" : true,
+"boolean isAvailable" : true,
+"boolean isReadOnly" : true,
+
 "objects" : [
 "User"
 ]

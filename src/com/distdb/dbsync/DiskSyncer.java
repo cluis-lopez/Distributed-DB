@@ -1,10 +1,15 @@
 package com.distdb.dbsync;
 
+import java.io.DataOutput;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,14 +31,14 @@ public class DiskSyncer implements Runnable {
 	public Map<String, String> dataPaths;
 	public int waitTime;
 	private Logger log;
-	private int sequence;
+	private boolean keepRunning;
 
 	public DiskSyncer(Logger log, int waitTime) {
 		this.log = log;
 		dbQueue = new HashMap<>();
 		dataPaths = new HashMap<>();
 		this.waitTime = waitTime;
-		sequence = 0;
+		this.keepRunning = true;
 	}
 
 	public void addDatabase(String database, Map<String, DBObject> objetos, String dataPath) {
@@ -46,84 +51,101 @@ public class DiskSyncer implements Runnable {
 		dbQueue.get(database).add(new LoggedOps(operation, objectName, id, o));
 	}
 
+	public void kill() {
+		this.keepRunning = false;
+	}
 	@Override
 	public void run() {
-		Gson json = new GsonBuilder().setPrettyPrinting().create();
-		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class)
-				.getType();
-		while (true) { // NOSONAR
-			if (isEmpty())
-				continue;
+		while (keepRunning) { // NOSONAR
 			for (String s : dbQueue.keySet()) {
-				log.log(Level.INFO, "Logging " + dbQueue.get(s).size() + " delayed operations for Database " + s);
-				String dataFile = dataPaths.get(s) + "_logging_" + sequence;
-				File f = new File(dataFile);
-				f.getParentFile().mkdirs();
-				try {
-					FileWriter fw = new FileWriter(f, false);
-					fw.write(json.toJson(dbQueue.get(s), dataType));
-					fw.flush();
-					fw.close();
-					dbQueue.get(s).clear();
-				} catch (IOException e) {
-					log.log(Level.SEVERE, "Cannot update logging operations on file: " + dataPaths.get(s) + "_logging_"
-							+ sequence + "_");
-					log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+				if (dbQueue.get(s).size() == 0)
+					continue;
+				log.log(Level.INFO, "Logging " + dbQueue.get(s).size() + "  delayed operations for Database " + s);
+				String dataFile = dataPaths.get(s) + "/" + s + "_logging";
+				if (!appendJson(dataFile, dbQueue.get(s))) {
+					log.log(Level.WARNING, "Cannot update log file");
+					System.err.println("No se puede actualizar el fichero de log para la base de datos " + s);
+				} else {
+					dbQueue.get(s).clear(); // Se vacia la pila de log correspondiente a la BBDD
 				}
+				log.log(Level.INFO, "Logged  operations for Database " + s);
 			}
-
 			try {
 				Thread.sleep(waitTime);
 			} catch (InterruptedException e) {
-				log.log(Level.SEVERE, "Interrupted Syncer");
-				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 			}
-			sequence ++;
 		}
 	}
 
-	public Map<String, String> getInfo(){
+	public Map<String, String> getInfoFromLogFiles() {
 		Map<String, String> ret = new HashMap<>();
+		for (String s: dbQueue.keySet()) {
+			String dataPath = dataPaths.get(s);
+			java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
+			Gson json = new Gson();
+			int nInserts = 0;
+			int nRemoves = 0;
+			try {
+				List<LoggedOps> logged =  json.fromJson(new FileReader(dataPath+"/"+s+"_logging"), dataType);
+				for (LoggedOps l: logged) {
+					if (l.op.equals("insert"))
+						nInserts++;
+					if (l.op.equals("remove"))
+						nRemoves++;
+				}
+			} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+				System.err.println("No puedo accer al fichero de log, quizá no existe");
+				log.log(Level.INFO, "Cannot read the log file. Maybe it's not there");
+				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+			}
+			ret.put("Pending inserts for "+s, Integer.toString(nInserts));
+			ret.put("Pending removes for "+s, Integer.toString(nRemoves));
+		}
 		return ret;
 	}
-	private void rebuildDatabase(String dbname) {
+
+	private void rebuildDatabaseOnDisk(String dbname) {
 
 	}
 
 	private boolean isEmpty() {
 		boolean ret = true;
-		for(String s: dbQueue.keySet()) {
+		for (String s : dbQueue.keySet()) {
 			ret = ret && dbQueue.get(s).isEmpty();
 		}
 		return ret;
 	}
-	
-	private void appendJson(String dataFile, String objectToAppend) {
-		File f = new File(dataFile);
-		Gson jsonRead = new Gson();
+
+	private boolean appendJson(String dataFile, List<LoggedOps> objectToAppend) {
+		boolean ret = false;
 		Gson jsonWrite = new GsonBuilder().setPrettyPrinting().create();
-		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class)
-				.getType();
-		String temp = "";
-		if (f.exists()) {
-			try {
-				temp = jsonRead.fromJson(new FileReader(f), dataType);
-			} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
+		File f = new File(dataFile);
+		String temp = jsonWrite.toJson(objectToAppend, dataType);
+		try {
+			if (f.exists()) {
+				RandomAccessFile fr = new RandomAccessFile(f, "rw"); // The log file already exists
+				fr.seek(f.length() - 2); // Nos posicionamos antes del último corchete
+				fr.write((",\n" +temp.substring(2, temp.length() - 1)+"\n]").getBytes());
+				fr.close();
+			} else {
+				FileWriter fw = new FileWriter(f);
+				fw.write(temp);
+				fw.close();
 			}
+			ret = true;
+		} catch (IOException e) {
+			System.err.println("Problemas al escribir el log");
+			log.log(Level.WARNING, "Problems when updating or creating Databse log at " + dataFile);
 		}
-		
-		
-		
-		
+		return ret;
 	}
-	
-	private class LoggedOps {
-		String op;
-		String objectName;
-		String id;
-		Object o;
+
+	public class LoggedOps {
+		public String op;
+		public String objectName;
+		public String id;
+		public Object o;
 
 		public LoggedOps(String operation, String objectName, String id, Object o) {
 			this.op = operation;
