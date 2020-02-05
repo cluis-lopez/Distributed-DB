@@ -1,6 +1,8 @@
 package com.distdb.dbsync;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +16,8 @@ import java.util.logging.Logger;
 import com.distdb.dbserver.DBObject;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 public class DiskSyncer implements Runnable {
@@ -92,6 +96,27 @@ public class DiskSyncer implements Runnable {
 			ret = ret && dbQueue.get(s).isEmpty();
 		}
 		return ret;
+	}
+	
+	private void appendJson(String dataFile, String objectToAppend) {
+		File f = new File(dataFile);
+		Gson jsonRead = new Gson();
+		Gson jsonWrite = new GsonBuilder().setPrettyPrinting().create();
+		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class)
+				.getType();
+		String temp = "";
+		if (f.exists()) {
+			try {
+				temp = jsonRead.fromJson(new FileReader(f), dataType);
+			} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		
+		
+		
 	}
 	
 	private class LoggedOps {
