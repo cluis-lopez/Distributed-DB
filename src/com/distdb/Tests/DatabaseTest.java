@@ -37,7 +37,7 @@ public class DatabaseTest {
 
 		// Remove all data files from TestDB database ... Warning !!!
 
-		Path folder = Paths.get("etc/data/TestDB/");
+		Path folder = Paths.get("etc/data/TestDB1/");
 		Stream<Path> list;
 		try {
 			list = Files.list(folder);
@@ -52,7 +52,7 @@ public class DatabaseTest {
 		}
 		
 		dsync = new DiskSyncer(log,30);
-		db = new Database(log, "TestDB", "TestDB.json", "com.distdb.TestDB", dsync, DBType.MASTER);
+		db = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync, DBType.MASTER);
 		u1 = new User("clopez", "clopez@gmail.com", "1234");
 		u2 = new User("mariano", "mrajoy@hotmail.com", "1234");
 		u3 = new User("juanito", "juanito@hotmail.com", "1234");
@@ -131,7 +131,7 @@ public class DatabaseTest {
 	void testStore() {
 		db.close();
 		List<String> result = new ArrayList<>();
-		File folder = new File("etc/data/TestdB");
+		File folder = new File("etc/data/TestdB1");
 		for (final File f : folder.listFiles())
 			result.add(f.getName());
 		Assertions.assertEquals(4, result.size());
@@ -142,7 +142,7 @@ public class DatabaseTest {
 
 	@Test
 	void testReOpen() {
-		db = new Database(log, "TestDB", "TestDB.json", "com.distdb.TestDB", dsync, DBType.MASTER);
+		db = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync, DBType.MASTER);
 		Map<String, String> map = db.getInfo();
 		Assertions.assertEquals(3, Integer.parseInt(map.get("User")));
 		Assertions.assertEquals(2, Integer.parseInt(map.get("Event")));
@@ -166,7 +166,7 @@ public class DatabaseTest {
 		
 		//Reabrimos la BBDD Ahora debería de haber 5 usuarios y 3 eventos
 		
-		db = new Database(log, "TestDB", "TestDB.json", "com.distdb.TestDB", dsync, DBType.MASTER);
+		db = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync, DBType.MASTER);
 		Map<String, String> map2 = db.getInfo();
 		Assertions.assertEquals(5, Integer.parseInt(map2.get("User")));
 		Assertions.assertEquals(3, Integer.parseInt(map2.get("Event")));

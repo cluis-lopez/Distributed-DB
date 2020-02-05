@@ -6,6 +6,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -69,14 +72,13 @@ public class Database {
 			}
 		}
 
-			System.out.println(props.isProperlyShutdown);
 		if (!props.isProperlyShutdown) { // La BBDD no se ha apagado correctamente asi que debemos aplicar los logs
 			boolean result = true;
 			json = new Gson();
 			java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
 			try {
 				String [] ret = new String[2];;
-				List<LoggedOps> logs = json.fromJson(new FileReader("dataPath/" + dbname +"_logging"), dataType);
+				List<LoggedOps> logs = json.fromJson(new FileReader(dataPath + "/" + dbname +"_logging"), dataType);
 				for(LoggedOps dblog: logs) {
 					if (dblog.op.equals("insert"))
 						ret = insert(dblog.objectName, dblog.o, false);
@@ -126,12 +128,19 @@ public class Database {
 		dbobjs = null;
 		System.err.println("Cerrando la base de datos " + dbname);
 		log.log(Level.INFO, "Closing database: " + dbname);
+		
 		if (ret[0].equals("OK")) {
+			dSyncer.forceLog();
 			props.isProperlyShutdown = true;
 			updateProps();
-			File f = new File(dataPath+"/"+dbname+"__logging");
-			if (f.exists() && f.isFile())
-				if(f.delete())
+			Path path = Paths.get(dataPath +"/"+ dbname +"_logging");
+			if (Files.isRegularFile(path));
+				try {
+					Files.delete(path);
+				} catch (IOException e) {
+					log.log(Level.WARNING, "Cannot delete datafile for database "+ dbname);
+					log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
+			}
 					log.log(Level.INFO, "Properly removed logging file for database "+ dbname);;
 		}
 		return ret;

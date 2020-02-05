@@ -4,9 +4,9 @@ import com.distdb.dbserver.DBTemplate;
 
 public class Brands extends DBTemplate {
 
-	String name;
-	String country;
-	String market;
+	public String name;
+	public String country;
+	public String market;
 	
 	public Brands(String name, String country, String market) {
 		super();

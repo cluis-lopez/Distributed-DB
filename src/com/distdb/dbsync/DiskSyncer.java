@@ -1,15 +1,11 @@
 package com.distdb.dbsync;
 
-import java.io.DataOutput;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -54,22 +50,11 @@ public class DiskSyncer implements Runnable {
 	public void kill() {
 		this.keepRunning = false;
 	}
+
 	@Override
 	public void run() {
 		while (keepRunning) { // NOSONAR
-			for (String s : dbQueue.keySet()) {
-				if (dbQueue.get(s).size() == 0)
-					continue;
-				log.log(Level.INFO, "Logging " + dbQueue.get(s).size() + "  delayed operations for Database " + s);
-				String dataFile = dataPaths.get(s) + "/" + s + "_logging";
-				if (!appendJson(dataFile, dbQueue.get(s))) {
-					log.log(Level.WARNING, "Cannot update log file");
-					System.err.println("No se puede actualizar el fichero de log para la base de datos " + s);
-				} else {
-					dbQueue.get(s).clear(); // Se vacia la pila de log correspondiente a la BBDD
-				}
-				log.log(Level.INFO, "Logged  operations for Database " + s);
-			}
+			forceLog();
 			try {
 				Thread.sleep(waitTime);
 			} catch (InterruptedException e) {
@@ -79,15 +64,15 @@ public class DiskSyncer implements Runnable {
 
 	public Map<String, String> getInfoFromLogFiles() {
 		Map<String, String> ret = new HashMap<>();
-		for (String s: dbQueue.keySet()) {
+		for (String s : dbQueue.keySet()) {
 			String dataPath = dataPaths.get(s);
 			java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
 			Gson json = new Gson();
 			int nInserts = 0;
 			int nRemoves = 0;
 			try {
-				List<LoggedOps> logged =  json.fromJson(new FileReader(dataPath+"/"+s+"_logging"), dataType);
-				for (LoggedOps l: logged) {
+				List<LoggedOps> logged = json.fromJson(new FileReader(dataPath + "/" + s + "_logging"), dataType);
+				for (LoggedOps l : logged) {
 					if (l.op.equals("insert"))
 						nInserts++;
 					if (l.op.equals("remove"))
@@ -98,14 +83,34 @@ public class DiskSyncer implements Runnable {
 				log.log(Level.INFO, "Cannot read the log file. Maybe it's not there");
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 			}
-			ret.put("Pending inserts for "+s, Integer.toString(nInserts));
-			ret.put("Pending removes for "+s, Integer.toString(nRemoves));
+			ret.put("Pending inserts for " + s, Integer.toString(nInserts));
+			ret.put("Pending removes for " + s, Integer.toString(nRemoves));
 		}
 		return ret;
 	}
 
 	private void rebuildDatabaseOnDisk(String dbname) {
 
+	}
+
+	public void forceLog() {
+		for (String s : dbQueue.keySet()) {
+			if (dbQueue.get(s).size() == 0)
+				continue;
+			log.log(Level.INFO, "Logging " + dbQueue.get(s).size() + "  delayed operations for Database " + s);
+			String dataFile = dataPaths.get(s) + "/" + s + "_logging";
+			if (!appendJson(dataFile, dbQueue.get(s))) {
+				log.log(Level.WARNING, "Cannot update log file");
+				System.err.println("No se puede actualizar el fichero de log para la base de datos " + s);
+			} else {
+				dbQueue.get(s).clear(); // Se vacia la pila de log correspondiente a la BBDD
+			}
+			log.log(Level.INFO, "Logged  operations for Database " + s);
+		}
+		try {
+			Thread.sleep(waitTime);
+		} catch (InterruptedException e) {
+		}
 	}
 
 	private boolean isEmpty() {
@@ -126,7 +131,7 @@ public class DiskSyncer implements Runnable {
 			if (f.exists()) {
 				RandomAccessFile fr = new RandomAccessFile(f, "rw"); // The log file already exists
 				fr.seek(f.length() - 2); // Nos posicionamos antes del último corchete
-				fr.write((",\n" +temp.substring(2, temp.length() - 1)+"\n]").getBytes());
+				fr.write((",\n" + temp.substring(2, temp.length() - 1) + "\n]").getBytes());
 				fr.close();
 			} else {
 				FileWriter fw = new FileWriter(f);

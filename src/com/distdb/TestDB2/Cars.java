@@ -3,9 +3,10 @@ package com.distdb.TestDB2;
 import com.distdb.dbserver.DBTemplate;
 
 public class Cars extends DBTemplate {
-	String model;
-	int horsePower;
-	String brand_id;
+	public String model;
+	public int horsePower;
+	public String brand_id;
+	
 	public Cars(String model, int horsePower, String brand_id) {
 		super();
 		this.model = model;
