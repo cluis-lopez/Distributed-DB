@@ -53,7 +53,7 @@ public class DiskSyncer implements Runnable {
 
 	@Override
 	public void run() {
-		while (keepRunning) { // NOSONAR
+		while (keepRunning) {
 			forceLog();
 			try {
 				Thread.sleep(waitTime);
@@ -71,16 +71,19 @@ public class DiskSyncer implements Runnable {
 			int nInserts = 0;
 			int nRemoves = 0;
 			try {
-				List<LoggedOps> logged = json.fromJson(new FileReader(dataPath + "/" + s + "_logging"), dataType);
+				FileReader fr = new FileReader(dataPath + "/" + s + "_logging");
+				List<LoggedOps> logged = json.fromJson(fr, dataType);
+				fr.close();
 				for (LoggedOps l : logged) {
 					if (l.op.equals("insert"))
 						nInserts++;
 					if (l.op.equals("remove"))
 						nRemoves++;
 				}
-			} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+			} catch (JsonIOException | JsonSyntaxException |IOException e) {
 				System.err.println("No puedo accer al fichero de log, quizá no existe");
 				log.log(Level.INFO, "Cannot read the log file. Maybe it's not there");
+				log.log(Level.SEVERE, e.getMessage());
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 			}
 			ret.put("Pending inserts for " + s, Integer.toString(nInserts));
@@ -95,7 +98,7 @@ public class DiskSyncer implements Runnable {
 
 	public void forceLog() {
 		for (String s : dbQueue.keySet()) {
-			if (dbQueue.get(s).size() == 0)
+			if (dbQueue.get(s).isEmpty())
 				continue;
 			log.log(Level.INFO, "Logging " + dbQueue.get(s).size() + "  delayed operations for Database " + s);
 			String dataFile = dataPaths.get(s) + "/" + s + "_logging";
@@ -106,10 +109,6 @@ public class DiskSyncer implements Runnable {
 				dbQueue.get(s).clear(); // Se vacia la pila de log correspondiente a la BBDD
 			}
 			log.log(Level.INFO, "Logged  operations for Database " + s);
-		}
-		try {
-			Thread.sleep(waitTime);
-		} catch (InterruptedException e) {
 		}
 	}
 
@@ -141,7 +140,7 @@ public class DiskSyncer implements Runnable {
 			ret = true;
 		} catch (IOException e) {
 			System.err.println("Problemas al escribir el log");
-			log.log(Level.WARNING, "Problems when updating or creating Databse log at " + dataFile);
+			log.log(Level.WARNING, "Problems when updating or creating database log at " + dataFile);
 		}
 		return ret;
 	}

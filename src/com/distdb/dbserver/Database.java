@@ -128,20 +128,22 @@ public class Database {
 		dbobjs = null;
 		System.err.println("Cerrando la base de datos " + dbname);
 		log.log(Level.INFO, "Closing database: " + dbname);
-		
+
 		if (ret[0].equals("OK")) {
 			dSyncer.forceLog();
 			props.isProperlyShutdown = true;
 			updateProps();
 			Path path = Paths.get(dataPath +"/"+ dbname +"_logging");
-			if (Files.isRegularFile(path));
+			if (Files.isRegularFile(path)) {
 				try {
 					Files.delete(path);
 				} catch (IOException e) {
-					log.log(Level.WARNING, "Cannot delete datafile for database "+ dbname);
-					log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
+					log.log(Level.SEVERE, "Cannot delete logging for database "+ dbname);
+					log.log(Level.SEVERE, e.getMessage());
+					log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+				}
+				log.log(Level.INFO, "Properly removed logging file for database "+ dbname);;
 			}
-					log.log(Level.INFO, "Properly removed logging file for database "+ dbname);;
 		}
 		return ret;
 	}

@@ -29,8 +29,13 @@ public class DistServer {
 	}
 
 	static DiskSyncer dsync;
-	static List<Database> dbs
-;
+	static List<Database> dbs;
+	static boolean keepRunning = true;
+	
+	public void kill() {
+		DistServer.keepRunning = false;
+	}
+
 
 	public static void main(String[] args) {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$tT %4$s %5$s%6$s%n");
@@ -47,6 +52,7 @@ public class DistServer {
 		log.addHandler(fd);
 		SimpleFormatter formatter = new SimpleFormatter();
 		fd.setFormatter(formatter);
+		fd.close();
 
 		String propsFile = System.getProperty("ConfigFile");
 		if (propsFile == null || propsFile.equals("")) {
@@ -58,7 +64,9 @@ public class DistServer {
 			props = json.fromJson(new FileReader(propsFile), Properties.class);
 		} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {
 			System.err.println("Cannot read or parse config file. Check Env variable or etc/DistDB.json file");
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Cannot open or access configuration file ... exiting");
+			log.log(Level.SEVERE, e.getMessage());
+			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 		}
 
 		DBType serverType;
@@ -89,6 +97,7 @@ public class DistServer {
 			server = new ServerSocket(props.dataPort);
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "Cannot start Server Socket at port: " + props.dataPort);
+			log.log(Level.SEVERE, e.getMessage());
 			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 			System.err.println("No se puede arrancar el server en el puerto " + props.dataPort);
 			e.printStackTrace();
@@ -99,7 +108,7 @@ public class DistServer {
 		log.log(Level.INFO, "Listening at port: " + props.dataPort);
 
 		Socket client = null;
-		while (true) { // NOSONAR
+		while (keepRunning) {
 			try {
 				client = server.accept();
 			} catch (IOException e) {
