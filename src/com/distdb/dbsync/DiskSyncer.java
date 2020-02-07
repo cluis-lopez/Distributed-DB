@@ -146,12 +146,14 @@ public class DiskSyncer implements Runnable {
 	}
 
 	public class LoggedOps {
+		public long timeStamp;
 		public String op;
 		public String objectName;
 		public String id;
 		public Object o;
 
 		public LoggedOps(String operation, String objectName, String id, Object o) {
+			this.timeStamp = System.currentTimeMillis();
 			this.op = operation;
 			this.objectName = objectName;
 			this.id = id;

@@ -5,10 +5,10 @@
     "syncTime": 30,
     
     "nodes": [
-    {"This": "localhost:8081"},
-    {"UnaReplica": "192.168.1.10:8082"}],
+    {"name": "ThisNode", "url": "http://localhost:8081", "type": "Master"},
+    {"name": "192.168.1.10:8082", "url": "http://192.168.1.10:8082", "type": "Replica"}
+    ],
     
-
     "databases": [
     	{"name": "SYS", "defFile": "SYS.json", "defPath": "com.distdb.SYSDB"},
     	{"name": "TestDB1", "defFile": "TestDB1.json", "defPath": "com.distdb.TestDB1"},

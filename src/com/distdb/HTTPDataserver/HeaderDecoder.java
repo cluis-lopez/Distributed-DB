@@ -1,4 +1,4 @@
-package com.distdb.HTTPserver;
+package com.distdb.HTTPDataserver;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;

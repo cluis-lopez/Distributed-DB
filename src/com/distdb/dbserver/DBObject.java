@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -179,12 +180,23 @@ public class DBObject<cl> {
 		return (newSign.equals(storedSign));
 	}
 
+	private String getRemoteObject(URL url, String objectName) {
+		String ret = "";
+		return ret;
+	}
+	
+	private String updateRemoteObject(URL url, String objectName) {
+		String ret = "";
+		return ret;
+	}
 	private class Signature {
 		Date date;
+		long timeStamp;
 		String signature;
 
 		public Signature(String content) {
 			this.date = new Date();
+			this.timeStamp = System.currentTimeMillis();
 			this.signature = signFile(content);
 		}
 	}

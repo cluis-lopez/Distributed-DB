@@ -3,10 +3,13 @@ package com.distdb.dbserver;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.FileHandler;
@@ -14,8 +17,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-import com.distdb.HTTPserver.DataServerAPI;
+import com.distdb.HTTPDataserver.DataServerAPI;
 import com.distdb.dbsync.DiskSyncer;
+import com.distdb.dbsync.MasterSyncerServer;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -29,9 +33,11 @@ public class DistServer {
 	}
 
 	static DiskSyncer dsync;
+	static MasterSyncerServer masterSyncerServer;
 	static List<Database> dbs;
+	static Map<DBType, List<Node>>nodes;
 	static boolean keepRunning = true;
-	
+
 	public void kill() {
 		DistServer.keepRunning = false;
 	}
@@ -69,22 +75,43 @@ public class DistServer {
 			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 		}
 
+		nodes = new HashMap<>();
+		nodes.put(DBType.MASTER, new ArrayList<>());
+		nodes.put(DBType.REPLICA, new ArrayList<>());
+		for (Map<String, String>m: props.nodes) {
+			try {
+				DBType type;
+				if (m.get("dbtype").equals("Master") || m.get("dbtype").equals("MASTER"))
+					type = DBType.MASTER;
+				else
+					type = DBType.REPLICA;
+				URL url = new URL(m.get("url"));
+				Node node = new Node (m.get("name"), url, type);
+				nodes.get(type).add(node);
+			} catch (MalformedURLException e) {
+				System.err.println("Nodo mal especificado (URL??)");
+				log.log(Level.WARNING, "Incorrect node specification. Check URL for node" + m.get("name"));
+			}
+		}
+		
 		DBType serverType;
 		dsync = null;
-
+		masterSyncerServer = null;
+		
 		if (props.ThisNode.equals("Master") || props.ThisNode.equals("MASTER")) {
 			serverType = DBType.MASTER;
 			dsync = new DiskSyncer(log, 1000 * props.syncTime);
+			masterSyncerServer = new MasterSyncerServer(props.clusterPort, nodes);
 		} else
 			serverType = DBType.REPLICA;
-		
+
 		dbs = new ArrayList<>();
 
 		for (Map<String, String> m : props.databases) {
 			System.err.println("Inicializando Database: " + m.get("Name"));
 			dbs.add(new Database(log, m.get("name"), m.get("defFile"), m.get("defPath"), dsync, serverType));
 		}
-		
+
 
 		Thread dSync = new Thread(dsync);
 		dSync.start();
