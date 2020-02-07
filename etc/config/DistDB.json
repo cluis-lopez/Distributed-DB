@@ -5,8 +5,8 @@
     "syncTime": 30,
     
     "nodes": [
-    {"name": "ThisNode", "url": "http://localhost:8081", "type": "Master"},
-    {"name": "192.168.1.10:8082", "url": "http://192.168.1.10:8082", "type": "Replica"}
+    {"name": "ThisNode", "url": "http://localhost:8081", "type": "Master", "nodeType": "Master"},
+    {"name": "192.168.1.10:8082", "url": "http://192.168.1.10:8082", "type": "Replica", "nodeType": "Replica"}
     ],
     
     "databases": [

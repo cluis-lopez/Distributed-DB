@@ -34,6 +34,7 @@ public class HeaderDecoder {
 		}
 	}
 
+	@Override
 	public String toString() {
 		String ret = "Comando: " + command + "\n";
 		ret += "Protocolo: " + protocol + "\n";

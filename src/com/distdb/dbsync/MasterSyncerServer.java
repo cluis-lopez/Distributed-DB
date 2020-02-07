@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.HTTPDataserver.DataServerAPI;
 import com.distdb.dbserver.Node;
 import com.distdb.dbserver.DistServer.DBType;
 

@@ -1,6 +1,5 @@
 package com.distdb.dbserver;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -55,6 +54,7 @@ public class Database {
 			props = json.fromJson(new FileReader(propsFile), Properties.class);
 		} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {
 			log.log(Level.SEVERE, "Cannot read definition file for database : " + dbname);
+			log.log(Level.SEVERE, e.getMessage());
 			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 		}
 
@@ -72,7 +72,7 @@ public class Database {
 			}
 		}
 
-		if (!props.isProperlyShutdown) { // La BBDD no se ha apagado correctamente asi que debemos aplicar los logs
+		if (!props.isProperlyShutdown && type == DBType.MASTER) { // La BBDD no se ha apagado correctamente asi que debemos aplicar los logs
 			boolean result = true;
 			json = new Gson();
 			java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();

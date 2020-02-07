@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,18 +33,20 @@ public class DistServer {
 		MASTER, REPLICA
 	}
 
-	static DiskSyncer dsync;
-	static MasterSyncerServer masterSyncerServer;
-	static List<Database> dbs;
-	static Map<DBType, List<Node>>nodes;
+	static Map<String, Database> dbs;
+	static EnumMap<DBType, List<Node>> nodes;
 	static boolean keepRunning = true;
 
 	public void kill() {
 		DistServer.keepRunning = false;
 	}
-
-
+	
 	public static void main(String[] args) {
+		new DistServer(args);
+	}
+
+
+	public DistServer (String[] args) {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$tT %4$s %5$s%6$s%n");
 		FileHandler fd = null;
 
@@ -60,6 +63,8 @@ public class DistServer {
 		fd.setFormatter(formatter);
 		fd.close();
 
+		// Initialize Properties
+		
 		String propsFile = System.getProperty("ConfigFile");
 		if (propsFile == null || propsFile.equals("")) {
 			propsFile = "etc/config/DistDB.json";
@@ -75,13 +80,15 @@ public class DistServer {
 			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 		}
 
-		nodes = new HashMap<>();
+		// Initialize cluster nodes
+		
+		nodes = new EnumMap<>(DBType.class);
 		nodes.put(DBType.MASTER, new ArrayList<>());
 		nodes.put(DBType.REPLICA, new ArrayList<>());
 		for (Map<String, String>m: props.nodes) {
 			try {
 				DBType type;
-				if (m.get("dbtype").equals("Master") || m.get("dbtype").equals("MASTER"))
+				if (m.get("nodeType").equals("Master") || m.get("nodeType").equals("MASTER"))
 					type = DBType.MASTER;
 				else
 					type = DBType.REPLICA;
@@ -94,9 +101,11 @@ public class DistServer {
 			}
 		}
 		
+		//Initialize Databases
+		
 		DBType serverType;
-		dsync = null;
-		masterSyncerServer = null;
+		DiskSyncer dsync = null;
+		MasterSyncerServer masterSyncerServer = null;
 		
 		if (props.ThisNode.equals("Master") || props.ThisNode.equals("MASTER")) {
 			serverType = DBType.MASTER;
@@ -105,18 +114,25 @@ public class DistServer {
 		} else
 			serverType = DBType.REPLICA;
 
-		dbs = new ArrayList<>();
+		dbs = new HashMap<>();
 
 		for (Map<String, String> m : props.databases) {
-			System.err.println("Inicializando Database: " + m.get("Name"));
-			dbs.add(new Database(log, m.get("name"), m.get("defFile"), m.get("defPath"), dsync, serverType));
+			System.err.println("Inicializando Database: " + m.get("name"));
+			dbs.put(m.get("name"), new Database(log, m.get("name"), m.get("defFile"), m.get("defPath"), dsync, serverType));
 		}
 
-
+		// Start Disk Sync Server
+		
 		Thread dSync = new Thread(dsync);
+		dSync.setName("DiskSyncer");
 		dSync.start();
-
-		// Arrancamos el servidor de datos
+		
+		// Start the net syncer server
+		
+		Thread netSync = new Thread(masterSyncerServer);
+		netSync.setName("Net Syncer");
+		
+		// Start the Data Server
 
 		ServerSocket server = null;
 
@@ -144,6 +160,7 @@ public class DistServer {
 			}
 			final DataServerAPI request = new DataServerAPI(log, client, dbs);
 			Thread thread = new Thread(request);
+			thread.setName("Request Dispatcher #" + thread.getId());
 			thread.start();
 		}
 	}
