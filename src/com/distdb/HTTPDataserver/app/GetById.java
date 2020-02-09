@@ -12,8 +12,7 @@ public class GetById extends MiniServlet {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		Datain din = (Datain) new Gson().fromJson(body, Datain.class);
-		Object o = dbs.get(dbname).getById(din.objectName, din.id);
-		ret[1] = new Gson().toJson(o);
+		ret[1] = dbs.get(dbname).getById(din.objectName, din.id);
 		
 		return ret;
 	}

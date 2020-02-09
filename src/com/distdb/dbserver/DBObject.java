@@ -29,7 +29,7 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
-public class DBObject<cl> {
+public class DBObject {
 
 	private Map<String, Object> obj;
 	private Class<?> cl;
@@ -38,7 +38,7 @@ public class DBObject<cl> {
 	DBType type;
 	java.lang.reflect.Type dataType;
 
-	public DBObject(String dataFile, Class cl, DBType type, Logger log) {
+	public DBObject(String dataFile, Class<?> cl, DBType type, Logger log) {
 
 		this.cl = cl;
 		this.log = log;

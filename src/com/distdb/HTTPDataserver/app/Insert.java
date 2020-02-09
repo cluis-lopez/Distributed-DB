@@ -21,6 +21,11 @@ public class Insert extends MiniServlet {
 		try {
 			Class<?> cl = Class.forName(dbs.get(dbname).defPath + "." + din.objectName);
 			Constructor<?>[] cons = cl.getConstructors();
+			if (cons == null || cons.length == 0 || cons.length>1) {
+				ret[1] = "Database objects must have a single constructor while "+din.objectName+" has "+cons.length;
+				return ret;
+			}
+			
 			Class<?>[] consArgs = cons[0].getParameterTypes();
 			
 			if (din.args.size() != consArgs.length) {
