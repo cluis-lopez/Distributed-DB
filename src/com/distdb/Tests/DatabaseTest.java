@@ -64,9 +64,9 @@ public class DatabaseTest {
 	@Order(1)
 	void testInsert() {
 		// Inserts de objetos tipo User
-		String[] test1 = db.insert("User", u1);
+		String test1 = db.insert("User", u1);
 		Assertions.assertEquals("OK", test1[0]);
-		String[] test2 = db.insert("User", u2);
+		String test2 = db.insert("User", u2);
 		Assertions.assertEquals("OK", test2[0]);
 		String[] test3 = db.insert("User", u3);
 		Assertions.assertEquals("OK", test3[0]);

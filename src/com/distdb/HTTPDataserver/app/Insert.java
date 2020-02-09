@@ -2,8 +2,10 @@ package com.distdb.HTTPDataserver.app;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 import com.distdb.dbserver.Database;
 import com.google.gson.Gson;
@@ -14,7 +16,6 @@ public class Insert extends MiniServlet {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		InsertDatain din = new Gson().fromJson(body, InsertDatain.class);
-		System.out.println(din.args.getClass().getName());
 		for (String s : din.args)
 			System.out.println(s);
 
@@ -41,10 +42,18 @@ public class Insert extends MiniServlet {
 			
 			Object toInsert = cons[0].newInstance(params);
 			toInsert = cl.cast(toInsert);
-			String[] result = dbs.get(dbname).insert(din.objectName, toInsert);
-			ret[1] = new Gson().toJson(new Dataout(result[0], result[1]));
-		} catch (ClassNotFoundException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			e.printStackTrace();
+			ret[1] = dbs.get(dbname).insert(din.objectName, toInsert);
+		} catch (ClassNotFoundException e) {
+			log.log(Level.INFO, "Invalid object to insert");
+			log.log(Level.INFO, e.getMessage());
+		} catch (InstantiationException | IllegalAccessException e){
+			log.log(Level.SEVERE, "Cannot instantiate command/servlet");
+			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+		} catch (InvocationTargetException e) {
+			log.log(Level.SEVERE, "Cannot instantiate the object to insert");
+			log.log(Level.SEVERE, e.getMessage());
+			log.log(Level.SEVERE, Arrays.toString(e.getCause().getStackTrace()));
+			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 		}
 		return ret;
 	}
@@ -54,17 +63,6 @@ public class Insert extends MiniServlet {
 		String token;
 		String objectName;
 		List<String> args;
-	}
-
-	public class Dataout {
-		String code;
-		String message;
-
-		public Dataout(String code, String message) {
-			this.code = code;
-			this.message = message;
-		}
-
 	}
 	
 	private static Object toObject( Class clazz, String value ) {
