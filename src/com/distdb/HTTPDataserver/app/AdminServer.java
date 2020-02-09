@@ -1,19 +1,23 @@
 package com.distdb.HTTPDataserver.app;
 
-import java.util.HashMap;
 import java.util.Map;
-
 import com.distdb.dbserver.Database;
 import com.google.gson.Gson;
 
-public class GetById extends MiniServlet {
-
+public class AdminServer extends MiniServlet {
 	public String[] doPost(Map<String, Database> dbs, String dbname, String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
-		Datain din = (Datain) new Gson().fromJson(body, Datain.class);
-		Object o = dbs.get(dbname).getById(din.objectName, din.id);
-		ret[1] = new Gson().toJson(o);
+		Datain din = new Gson().fromJson(body, Datain.class);
+		
+		if (din.command.equals("shutdown")) {
+			String[] result = new String[2];
+			result = dbs.get(dbname).close();
+			ret [1] = new Gson().toJson(result);
+		}
+		
+		
+		
 		
 		return ret;
 	}
@@ -21,7 +25,6 @@ public class GetById extends MiniServlet {
 	private class Datain {
 		String user;
 		String token;
-		String objectName;
-		String id;
+		String command;
 	}
 }

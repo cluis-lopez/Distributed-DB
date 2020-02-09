@@ -80,8 +80,13 @@ public class DataServerAPI implements Runnable {
 
 			if (reqValid && reqLine.command.equals("GET"))
 				response = processGet(reqLine);
-			if (reqValid && reqLine.command.equals("POST"))
+			// HTTP POST only accepts Json payloads
+			if (reqValid && reqLine.command.equals("POST") && headerFields.get("Content-Type") != null
+					&& headerFields.get("Content-Type").equals("application/json"))
 				response = processPost(reqLine);
+			else
+				response = "HTTP/1.0 400 Bad Request (Json payload required)" + newLine + newLine;
+			
 			if (!reqValid) // Bad Request
 				response = "HTTP/1.0 400 Bad Request" + newLine + newLine;
 
@@ -100,19 +105,17 @@ public class DataServerAPI implements Runnable {
 		String[] ret = new String[2];
 		String resp = "";
 		Object ob = null;
-		// Solo se admite Json en el cuerpo del mensaje
-		if (req.params.get("Content-Type") == null || !req.params.get("Content-Type").equals("application/json"))
-			resp = "HTTP/1.0 400 Bad Request (Expected Json payload)" + newLine + newLine;
-		else {
-			String[] res = req.resource.split("/"); // First element should be DataBase name, Second must be the command
-			String dbname = res[0].substring(1);
-
+		String[] res = req.resource.split("/"); // First element should be DataBase name, Second must be the command
+		if (res.length != 3) {
+			resp = "HTTP/1.0 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
+		} else {
 			try {
-				Class<?> cl = Class.forName("com.distdb.HTTPDataServer.app."+res[1]);
+				Class<?> cl = Class.forName("com.distdb.HTTPDataserver.app." + res[2]);
 				Constructor<?> cons = cl.getConstructor();
 				ob = cons.newInstance(null);
 				ob.getClass().getMethod("initialize", Logger.class).invoke(ob, log);
-				ret = (String[]) ob.getClass().getMethod("doPost", HashMap.class, String.class, String.class).invoke(ob, dbs, dbname, body);
+				ret = (String[]) ob.getClass().getMethod("doPost", Map.class, String.class, String.class).invoke(ob,
+						dbs, res[1], body);
 			} catch (ClassNotFoundException e) {
 				log.log(Level.INFO, "Invalid command");
 				log.log(Level.INFO, e.getMessage());
@@ -126,13 +129,13 @@ public class DataServerAPI implements Runnable {
 				log.log(Level.SEVERE, Arrays.toString(e.getCause().getStackTrace()));
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 			}
-			resp = "HTTP/1.0 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
-					+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			resp = "HTTP/1.0 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
+					+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 		}
 		return resp;
 	}
 
-		//HTTP Get should be reserved for static files
+	// HTTP Get should be reserved for static files
 	private String processGet(HeaderDecoder req) {
 		return "";
 	}

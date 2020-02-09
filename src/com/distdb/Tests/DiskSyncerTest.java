@@ -124,10 +124,14 @@ class DiskSyncerTest {
 		
 		db1.close();
 		db2.close();
+		// Equivalente a abortar el programa
+		//db1 = null;
+		//db2 = null;
 		dSyncer.kill();
 		dSyncer = null;
 		//Reopen databases
 		
+		System.out.println("Reopen Databases");
 		dSyncer = new DiskSyncer(log, waitTime);
 		db1 = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dSyncer, DBType.MASTER);
 		db2 = new Database(log, "TestDB2", "TestDB2.json", "com.distdb.TestDB2", dSyncer, DBType.MASTER);

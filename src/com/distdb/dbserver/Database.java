@@ -19,16 +19,21 @@ import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.distdb.dbsync.DiskSyncer.LoggedOps;
 
 public class Database {
 
-	private Logger log;
 	public String dbname;
 	public String dataPath;
+	public String defPath;
+	private Logger log;
 	private String propsFile;
 	private DBType type;
 	private DiskSyncer dSyncer;
@@ -36,6 +41,14 @@ public class Database {
 
 	public Map<String, DBObject> dbobjs;
 
+	/**
+	 * @param log
+	 * @param name
+	 * @param config
+	 * @param defPath
+	 * @param dSyncer
+	 * @param type
+	 */
 	public Database(Logger log, String name, String config, String defPath, DiskSyncer dSyncer, DBType type) {
 		System.err.println("Opening " + (type == DBType.MASTER ? "MASTER" : "REPLICA") + " database " + name
 				+ " with file " + config + " at " + defPath);
@@ -44,6 +57,7 @@ public class Database {
 		this.log = log;
 		this.type = type;
 		this.dSyncer = dSyncer;
+		this.defPath = defPath;
 		dbname = name;
 		dbobjs = new HashMap<>();
 
@@ -73,21 +87,25 @@ public class Database {
 		}
 
 		if (!props.isProperlyShutdown && type == DBType.MASTER) { // La BBDD no se ha apagado correctamente asi que debemos aplicar los logs
+			log.log(Level.INFO, "Database was not properly shutdown. Recovering from logs if any");
 			boolean result = true;
-			json = new Gson();
-			java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
 			try {
-				String [] ret = new String[2];;
-				List<LoggedOps> logs = json.fromJson(new FileReader(dataPath + "/" + dbname +"_logging"), dataType);
-				for(LoggedOps dblog: logs) {
-					if (dblog.op.equals("insert"))
-						ret = insert(dblog.objectName, dblog.o, false);
-					if (dblog.op.equals("remove"))
-						ret = remove(dblog.objectName, dblog.id, false);
-					result = result && (ret[0].equals("OK"));
+				FileReader fr = new FileReader(dataPath + "/" + dbname +"_logging");
+				String [] ret = new String[2];
+				JsonArray array = new JsonParser().parse(fr).getAsJsonArray();
+				for (JsonElement jsonElement : array) {
+		            JsonObject jobj = new JsonParser().parse(jsonElement.toString()).getAsJsonObject();
+		            if((jobj.get("op").getAsString()).equals("insert")) {
+		            	Class<?> cl = Class.forName(defPath + "." + jobj.get("objectName").getAsString());
+		            	Object object = new Gson().fromJson(jobj.get("o"), cl);
+		            	ret = insert(jobj.get("objectName").getAsString(), object, false);
+		            }
+		            if((jobj.get("op").getAsString()).equals("remove"))
+		            	ret = remove(jobj.get("objectName").getAsString(), jobj.get("id").getAsString(), false);
 				}
-			} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
-				System.err.println("No se ha podio aplicar el log a la base de datos "+ dbname);
+				fr.close();
+			} catch (JsonIOException | JsonSyntaxException | ClassNotFoundException | IOException e) {
+				System.err.println("No se ha podido aplicar el log a la base de datos "+ dbname);
 				log.log(Level.SEVERE, "Cannot apply log to database "+dbname);
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));;
 			}
@@ -163,17 +181,17 @@ public class Database {
 		return insert(objectName, o, true);
 	}
 
-	public String[] insert(String objectName, Object o, boolean logging) {
+	public String[] insert(String objectName, Object object, boolean logging) {
 		String ret[] = new String[2];
-		Class<?> cl = o.getClass();
-		if (!objectName.equals(cl.getSimpleName())) {
-			ret[0] = "FAIL";
-			ret[1] = "Invalid Object";
-			return ret;
-		}
+		Class<?> cl = object.getClass();
 		Field f = null;
 		String id = null;
+		Object o = null;
+		
 		try {
+			//o = Class.forName(defPath + "." +objectName).cast(object);
+			o = object;
+			System.out.println(objectName + " : "+ cl.getSimpleName());
 			Class spcl = cl.getSuperclass();
 			f = spcl.getDeclaredField("id");
 			id = (String) f.get(o);
@@ -215,10 +233,14 @@ public class Database {
 	}
 
 	public Object getById(String objectName, String id) {
+		if (id == null || objectName == null || id.equals("") || objectName.equals("") || dbobjs.get(objectName) == null)
+			return null;
 		return dbobjs.get(objectName).getById(id);
 	}
 
 	public List<Object> searchByField(String objectName, String fieldName, String value) {
+		if (fieldName == null || objectName == null || fieldName.equals("") || objectName.equals("") || dbobjs.get(objectName) == null)
+			return null;
 		List<Object> ret = dbobjs.get(objectName).searchByField(fieldName, value);
 		return ret;
 	}

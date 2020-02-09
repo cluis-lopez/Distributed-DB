@@ -1,0 +1,86 @@
+package com.distdb.HTTPDataserver.app;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+import java.util.Map;
+
+import com.distdb.dbserver.Database;
+import com.google.gson.Gson;
+
+public class Insert extends MiniServlet {
+
+	public String[] doPost(Map<String, Database> dbs, String dbname, String body) {
+		String[] ret = new String[2];
+		ret[0] = "application/json";
+		InsertDatain din = new Gson().fromJson(body, InsertDatain.class);
+		System.out.println(din.args.getClass().getName());
+		for (String s : din.args)
+			System.out.println(s);
+
+		try {
+			Class<?> cl = Class.forName(dbs.get(dbname).defPath + "." + din.objectName);
+			Constructor<?>[] cons = cl.getConstructors();
+			Class<?>[] consArgs = cons[0].getParameterTypes();
+			
+			if (din.args.size() != consArgs.length) {
+				ret[1] = "Number of arguments mismatch. Used: " + din.args.size() + " while object " + din.objectName
+						+ "constructor, expects " + consArgs.length;
+				return ret;
+			}
+			
+			Object[] params = new Object[consArgs.length];
+			for(int i= 0; i < consArgs.length; i++) {
+				params[i] = toObject(consArgs[i], din.args.get(i));
+			}
+			
+			Object toInsert = cons[0].newInstance(params);
+			toInsert = cl.cast(toInsert);
+			String[] result = dbs.get(dbname).insert(din.objectName, toInsert);
+			ret[1] = new Gson().toJson(new Dataout(result[0], result[1]));
+		} catch (ClassNotFoundException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			e.printStackTrace();
+		}
+		return ret;
+	}
+	
+	public class InsertDatain {
+		String user;
+		String token;
+		String objectName;
+		List<String> args;
+	}
+
+	public class Dataout {
+		String code;
+		String message;
+
+		public Dataout(String code, String message) {
+			this.code = code;
+			this.message = message;
+		}
+
+	}
+	
+	private static Object toObject( Class clazz, String value ) {
+		if( ! clazz.isPrimitive()) {
+		    if( Boolean.class == clazz ) return Boolean.parseBoolean( value );
+		    if( Byte.class == clazz ) return Byte.parseByte( value );
+		    if( Short.class == clazz ) return Short.parseShort( value );
+		    if( Integer.class == clazz ) return Integer.parseInt( value );
+		    if( Long.class == clazz ) return Long.parseLong( value );
+		    if( Float.class == clazz ) return Float.parseFloat( value );
+		    if( Double.class == clazz ) return Double.parseDouble( value );
+		    return value;
+		} else { //The parameters is a primitive
+			if(clazz.getTypeName().equals("boolean")) return Boolean.parseBoolean(value);
+			if(clazz.getTypeName().equals("byte")) return Byte.parseByte(value);
+			if(clazz.getTypeName().equals("short")) return Short.parseShort(value);
+			if(clazz.getTypeName().equals("int")) return Integer.parseInt(value);
+			if(clazz.getTypeName().equals("long")) return Long.parseLong(value);
+			if(clazz.getTypeName().equals("float")) return Float.parseFloat( value );
+		    if(clazz.getTypeName().equals("double")) return Double.parseDouble( value );
+		}
+		return value;
+	}
+}

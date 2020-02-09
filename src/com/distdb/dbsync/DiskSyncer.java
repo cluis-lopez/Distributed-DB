@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.distdb.dbserver.DBObject;
+import com.distdb.dbsync.DiskSyncer.LoggedOps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
@@ -52,6 +53,8 @@ public class DiskSyncer implements Runnable {
 
 	@Override
 	public void run() {
+		log.log(Level.INFO, "Starting the disk syncer daemon");
+		log.log(Level.INFO, "Syncing to disk every " + waitTime/1000 + " seconds");
 		while (keepRunning) {
 			forceLog();
 			try {
@@ -123,6 +126,7 @@ public class DiskSyncer implements Runnable {
 		boolean ret = false;
 		Gson jsonWrite = new GsonBuilder().setPrettyPrinting().create();
 		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
+		dataType =  new TypeToken<List<LoggedOps>>() {}.getType();
 		File f = new File(dataFile);
 		String temp = jsonWrite.toJson(objectToAppend, dataType);
 		try {
