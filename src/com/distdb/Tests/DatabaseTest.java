@@ -18,13 +18,13 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import com.distdb.HTTPDataserver.app.RetCodes;
 import com.distdb.TestDB1.Event;
 import com.distdb.TestDB1.User;
 import com.distdb.dbserver.Database;
 import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 @TestMethodOrder(OrderAnnotation.class)
 public class DatabaseTest {
@@ -80,7 +80,7 @@ public class DatabaseTest {
 		String[] test5 = db.insert("Event", e2);
 		Assertions.assertEquals("OK", test5[0]);
 		//Insercion de objeto no existente
-		String [] test6 = db.insert("ObjetoNoExistente", e2);
+		String [] test6 = db.insert("ObjetoInexistente", e2);
 		Assertions.assertEquals("Invalid Object", test6[1]);
 		//Insercion de objeto existente pero con la clase confundida
 		String [] test7 = db.insert("User", e2);
@@ -104,28 +104,31 @@ public class DatabaseTest {
 	@Test
 	@Order(3)
 	void testSearch() {
-		u4 = (User) new Gson().fromJson(db.getById("User", u2.id)[3], User.class);
+		u4 = (User) new Gson().fromJson(db.getById("User", u2.id)[2], User.class);
 		Assertions.assertEquals(u4, null);
-		u4 = (User) new Gson().fromJson(db.getById("User", u1.id)[3], User.class);;
-		Assertions.assertEquals(u4, u1);
-		e3 = (Event) new Gson().fromJson(db.getById("Event", "Evento2")[3], Event.class);
-		Assertions.assertEquals(e2, e3);
+		u4 = (User) new Gson().fromJson(db.getById("User", u1.id)[2], User.class);;
+		Assertions.assertEquals(u4.id, u1.id);
+		e3 = (Event) new Gson().fromJson(db.getById("Event", "Evento2")[2], Event.class);
+		Assertions.assertEquals(e2.id, e3.id);
 
-		List<Object> l = new Gson().fromJson(db.searchByField("User", "nonexistentfield", "hot")[3], List.class);
+		List<User> l = new Gson().fromJson(db.searchByField("User", "nonexistentfield", "hot")[2], List.class);
 		Assertions.assertEquals(0, l.size());
-		l = new Gson().fromJson(db.searchByField("User", "lastLogin", "hot")[3], List.class);
+		l = new Gson().fromJson(db.searchByField("User", "lastLogin", "hot")[2], List.class);
 		Assertions.assertEquals(0, l.size());
-		l = new Gson().fromJson(db.searchByField("User", "mail", "hot")[3], List.class);
+		
+		java.lang.reflect.Type dt = TypeToken.getParameterized(List.class, User.class).getType();
+		l = new Gson().fromJson(db.searchByField("User", "mail", "hot")[2], dt);
 		Assertions.assertEquals(1, l.size());
+		
 		Assertions.assertEquals("juanito", ((User) l.get(0)).name);
 		u4 = new User("lolita", "lolita@gmail.com", "7890");
 		db.insert("User", u4);
 		Map<String, String> map = db.getInfo();
 		Assertions.assertEquals(3, Integer.parseInt(map.get("User")));
-		l = new Gson().fromJson(db.searchByField("User", "mail", "gm")[3], List.class);
+		l = new Gson().fromJson(db.searchByField("User", "mail", "gm")[2], dt);
 		Assertions.assertEquals(2, l.size());
-		Assertions.assertEquals(true, l.contains(u1));
-		Assertions.assertEquals(true, l.contains(u4));
+		Assertions.assertTrue(l.get(0).name.equals("clopez") ||  l.get(1).name.equals("clopez"));
+		Assertions.assertTrue(l.get(0).name.equals("lolita") ||  l.get(1).name.equals("lolita"));
 	}
 
 	@Test
@@ -151,10 +154,10 @@ public class DatabaseTest {
 				
 		Object o = db.getById("User", u1.id);
 		System.err.println("Tipo de objeto " + o.getClass().getTypeName());
-		User u5 = new Gson().fromJson(db.getById("User", u3.id)[3], User.class);
+		User u5 = new Gson().fromJson(db.getById("User", u3.id)[2], User.class);
 		Assertions.assertEquals(true, u5.id.equals(u3.id));
 		//Assertions.assertEquals(u4, u1);
-		e4 = new Gson().fromJson(db.getById("Event", "Evento2")[3], Event.class);
+		e4 = new Gson().fromJson(db.getById("Event", "Evento2")[2], Event.class);
 		Assertions.assertEquals("Preocupante", e4.type);
 		
 		 //Insertamos nuevos valores en la coleccion de usuarios

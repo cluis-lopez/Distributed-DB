@@ -26,6 +26,7 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 public class Database {
 
@@ -184,6 +185,12 @@ public class Database {
 		String id = null;
 		Object o = null;
 		
+		if (!cl.getSimpleName().equals(objectName)) {
+			ret[0] = "FAIL";
+			ret[1] = "Invalid Object";
+			return ret;
+		}
+		
 		try {
 			o = object;
 			System.out.println(objectName + " : "+ cl.getSimpleName());
@@ -235,7 +242,7 @@ public class Database {
 		try {
 			Class<?> cl = Class.forName(defPath + "." +objectName);
 			Object object = cl.cast(dbobjs.get(objectName).getById(id));
-			ret[3] = new Gson().toJson(object, cl);
+			ret[2] = new Gson().toJson(object, cl);
 		} catch (ClassNotFoundException e) {
 			ret[0] = "FAIL";
 			ret[1] = "Cannot find class descriptor for " + objectName;
@@ -251,14 +258,17 @@ public class Database {
 		ret[0] = "FAIL"; ret[1] = "No object "+objectName+" or fieldname "+fieldName;
 		if (fieldName == null || objectName == null || fieldName.equals("") || objectName.equals("") || dbobjs.get(objectName) == null)
 			return ret;
+		
 		List<Object> temp = dbobjs.get(objectName).searchByField(fieldName, value);
+		
 		if (temp.isEmpty()) {
 			ret[1] = "Cannot find any object "+objectName+" with the pattern "+value+" on field "+fieldName;
 		} else {
 			ret[0] = "OK";
 			ret[1] = "Find "+temp.size()+" objects matching";
-			ret[2] = new Gson().toJson(temp);
 		}
+		
+		ret[2] = new Gson().toJson(temp, List.class);
 		return ret;
 	}
 
