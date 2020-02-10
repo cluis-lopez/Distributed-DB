@@ -122,18 +122,19 @@ public class Database {
 
 	}
 
-	public String close() {
-		RetCodes ret = new RetCodes("OK");
+	public String[] close() {
+		String[] ret = new String[3];
+		ret[0] = "OK";
 		String[] temp;
 		if (type == DBType.MASTER) {
 			for (DBObject o : dbobjs.values()) {
 				temp = o.flush();
 				if (!temp[0].equals("OK"))
-					ret.setCode(temp[0]);
+					ret[0] = temp[0];
 			}
 		} else {
-			ret.setCode("FAIL");
-			ret.setMessage("Replicas cannot save database on close");
+			ret[0] = "FAIL";
+			ret[1] = "Replicas cannot save database on close";
 		}
 
 		for (DBObject o : dbobjs.values())
@@ -142,7 +143,7 @@ public class Database {
 		System.err.println("Cerrando la base de datos " + dbname);
 		log.log(Level.INFO, "Closing database: " + dbname);
 
-		if (ret.getCode().equals("OK")) {
+		if (ret[0].equals("OK")) {
 			dSyncer.forceLog();
 			props.isProperlyShutdown = true;
 			updateProps();
@@ -158,7 +159,7 @@ public class Database {
 				log.log(Level.INFO, "Properly removed logging file for database "+ dbname);;
 			}
 		}
-		return ret.toJsonString();
+		return ret;
 	}
 
 	public String sync() {
@@ -172,12 +173,12 @@ public class Database {
 		return ret.toJsonString();
 	}
 
-	public String insert(String objectName, Object o) {
+	public String[] insert(String objectName, Object o) {
 		return insert(objectName, o, true);
 	}
 
-	public String insert(String objectName, Object object, boolean logging) {
-		RetCodes ret = new RetCodes();
+	public String[] insert(String objectName, Object object, boolean logging) {
+		String[] ret = new String[3];
 		Class<?> cl = object.getClass();
 		Field f = null;
 		String id = null;
@@ -193,79 +194,82 @@ public class Database {
 			f.set(o, !logging);
 		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
 			System.err.println("Algo fue mal con el objeto a insertar");
-			ret.setCode("FAIL");
-			ret.setMessage("Something went wrong with the object to insert in the Database");
+			ret[0] = "FAIL";
+			ret[1] = "Something went wrong with the object to insert in the Database";
 			e.printStackTrace();
-			return ret.toJsonString();
+			return ret;
 		}
 
 		dbobjs.get(objectName).insert(id, o);
 
 		if (logging && type == DBType.MASTER && dSyncer != null)
 			dSyncer.enQueue("insert", dbname, objectName, id, o);
-		ret.setCode("OK");
-		ret.setMessage("Inserted new " + objectName + " with id " + id);
-		return ret.toJsonString();
+		ret[0] ="OK";
+		ret[1] = "Inserted new " + objectName + " with id " + id;
+		return ret;
 	}
 
-	public String remove(String objectName, String id) {
+	public String[] remove(String objectName, String id) {
 		return remove(objectName, id, true);
 	}
 
-	public String remove(String objectName, String id, boolean logging) {
-		RetCodes ret = new RetCodes("FAIL", "Object does not exist");
+	public String[] remove(String objectName, String id, boolean logging) {
+		String[] ret = new String[3];
+		ret[0] = "FAIL"; ret[1] = "Object does not exist";
 		if (dbobjs.get(objectName).getById(id) != null) {
 			dbobjs.get(objectName).remove(id);
 			if (logging && type == DBType.MASTER && dSyncer != null)
 				dSyncer.enQueue("remove", dbname, objectName, id, null);
-			ret.setCode("OK");
-			ret.setMessage("Remove object with id " + id);
+			ret[0] ="OK";
+			ret[1] = "Remove object with id " + id;
 		}
-		return ret.toJsonString();
+		return ret;
 	}
 
-	public String getById(String objectName, String id) {
-		RetCodes ret = new RetCodes("FAIL", "No object "+objectName+" with id "+id);
+	public String[] getById(String objectName, String id) {
+		String[] ret = new String[3];
+		ret[0] = "FAIL"; ret[1] =  "No object "+objectName+" with id "+id;
 		if (id == null || objectName == null || id.equals("") || objectName.equals("") || dbobjs.get(objectName) == null)
-			return ret.toJsonString();
+			return ret;
 
 		try {
 			Class<?> cl = Class.forName(defPath + "." +objectName);
 			Object object = cl.cast(dbobjs.get(objectName).getById(id));
-			ret.setBody(new Gson().toJson(object, cl));
+			ret[3] = new Gson().toJson(object, cl);
 		} catch (ClassNotFoundException e) {
-			ret.setCode("FAIL");
-			ret.setMessage("Cannot find class descriptor for " + objectName);
-			return ret.toJsonString();
+			ret[0] = "FAIL";
+			ret[1] = "Cannot find class descriptor for " + objectName;
+			return ret;
 		}
-		ret.setCode("OK");
-		ret.setMessage("Returned object with id "+id);
-		return ret.toJsonString();
+		ret[0] = "OK";
+		ret[1] = "Returned object with id "+id;
+		return ret;
 	}
 
-	public String searchByField(String objectName, String fieldName, String value) {
-		RetCodes ret = new RetCodes("FAIL", "No object "+objectName+" or fieldname "+fieldName);
+	public String[] searchByField(String objectName, String fieldName, String value) {
+		String[] ret = new String[3];
+		ret[0] = "FAIL"; ret[1] = "No object "+objectName+" or fieldname "+fieldName;
 		if (fieldName == null || objectName == null || fieldName.equals("") || objectName.equals("") || dbobjs.get(objectName) == null)
-			return ret.toJsonString();
+			return ret;
 		List<Object> temp = dbobjs.get(objectName).searchByField(fieldName, value);
 		if (temp.isEmpty()) {
-			ret.setMessage("Cannot find any object "+objectName+" with the pattern "+value+" on field "+fieldName);
+			ret[1] = "Cannot find any object "+objectName+" with the pattern "+value+" on field "+fieldName;
 		} else {
-			ret.setCode("OK");
-			ret.setMessage("Find "+temp.size()+" objects matching");
-			ret.setBody(new Gson().toJson(temp));
+			ret[0] = "OK";
+			ret[1] = "Find "+temp.size()+" objects matching";
+			ret[2] = new Gson().toJson(temp);
 		}
-		return ret.toJsonString();
+		return ret;
 	}
 
-	public String getInfo() {
+	public Map<String, String> getInfo() {
 		Map<String, String> ret = new HashMap<>();
 		ret.put("Name", dbname);
 		ret.put("Config File: ", propsFile);
 		for (String s : dbobjs.keySet()) {
 			ret.put(s, Integer.toString(dbobjs.get(s).size()));
 		}
-		return new Gson().toJson(ret, Map.class);
+		return ret;
 	}
 
 	private void updateProps() {

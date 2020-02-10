@@ -2,7 +2,9 @@ package com.distdb.HTTPDataserver.app;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class RetCodes {
 	
@@ -44,14 +46,26 @@ public class RetCodes {
 		if (isJSONValid(body)) {
 			System.out.println("El body es Json");
 			JsonObject jo = new JsonObject();
+			JsonParser jp = new JsonParser(); 
+			JsonElement je = jp.parse(body);
+			
 			jo.addProperty("code", gson.toJson(code));
 			jo.addProperty("message", gson.toJson(message));
-			jo.add("body", gson.toJsonTree(body));
+			jo.add("body", je);
 			ret = jo.toString();
 			System.out.println(jo);
 		} else {
 			ret = gson.toJson(this);
 		}
+		return ret;
+	}
+	
+	public static String[] Decode(String jsonString) {
+		String[] ret = new String [3];
+		RetCodes rc = new Gson().fromJson(jsonString, RetCodes.class);
+		ret[0] = rc.code;
+		ret[1] = rc.message;
+		ret[3] = rc.body;
 		return ret;
 	}
 	
