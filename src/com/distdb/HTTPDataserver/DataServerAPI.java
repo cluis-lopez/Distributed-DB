@@ -84,12 +84,14 @@ public class DataServerAPI implements Runnable {
 					&& headerFields.get("Content-Type").equals("application/json"))
 				response = processPost(reqLine);
 			else
-				response = "HTTP/1.0 400 Bad Request (Json payload required)" + newLine + newLine;
-			
-			if (!reqValid) // Bad Request
-				response = "HTTP/1.0 400 Bad Request" + newLine + newLine;
+				response = "HTTP/1.1 400 Bad Request (Json payload required)" + newLine + newLine;
 
+			if (!reqValid) // Bad Request
+				response = "HTTP/1.1 400 Bad Request" + newLine + newLine;
+
+			System.out.println(response);
 			pout.print(response);
+			pout.flush();
 			pout.close();
 			out.close();
 			in.close();
@@ -105,8 +107,10 @@ public class DataServerAPI implements Runnable {
 		String resp = "";
 		Object ob = null;
 		String[] res = req.resource.split("/"); // First element should be DataBase name, Second must be the command
-		if (res.length != 3) {
-			resp = "HTTP/1.0 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
+		if (res == null || res.length != 3) {
+			resp = "HTTP/1.1 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
+		} else if (dbs.get(res[1]) == null) {
+			resp = "HTTP/1.1 400 Bad Request (Non-Existant Database)" + newLine + newLine;
 		} else {
 			try {
 				Class<?> cl = Class.forName("com.distdb.HTTPDataserver.app." + res[2]);
@@ -128,7 +132,7 @@ public class DataServerAPI implements Runnable {
 				log.log(Level.SEVERE, Arrays.toString(e.getCause().getStackTrace()));
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 			}
-			resp = "HTTP/1.0 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
+			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
 					+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 		}
 		return resp;

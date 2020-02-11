@@ -16,7 +16,7 @@ public class GetById extends MiniServlet {
 		if (!temp[0].equals("OK"))
 			ret[1] = new Gson().toJson(temp[1]);
 		else {
-			ret[1] = new Gson().toJson(temp[2]);
+			ret[1] = temp[2];
 		}
 		return ret;
 	}

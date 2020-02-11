@@ -1,6 +1,6 @@
 {
   "dataPath": "etc/data/TestDB1",
-  "isProperlyShutdown": true,
+  "isProperlyShutdown": false,
   "isAvailable": false,
   "isReadOnly": false,
   "objects": [

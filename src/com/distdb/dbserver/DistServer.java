@@ -42,11 +42,11 @@ public class DistServer {
 	}
 	
 	public static void main(String[] args) {
-		new DistServer(args);
+		new DistServer();
 	}
 
 
-	public DistServer (String[] args) {
+	public DistServer () {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$tT %4$s %5$s%6$s%n");
 		FileHandler fd = null;
 
@@ -161,7 +161,7 @@ public class DistServer {
 			final DataServerAPI request = new DataServerAPI(log, client, dbs);
 			Thread thread = new Thread(request);
 			thread.setName("Request Dispatcher #" + thread.getId());
-			thread.start();
+			thread.start();;
 		}
 	}
 

@@ -25,7 +25,6 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 
 public class Database {
 
@@ -143,7 +142,7 @@ public class Database {
 		System.err.println("Cerrando la base de datos " + dbname);
 		log.log(Level.INFO, "Closing database: " + dbname);
 
-		if (ret[0].equals("OK")) {
+		if (ret[0].equals("OK")) { //All objects were cleanly closed (saved on disk files)
 			dSyncer.forceLog();
 			props.isProperlyShutdown = true;
 			updateProps();
