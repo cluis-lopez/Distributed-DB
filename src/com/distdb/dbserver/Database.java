@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.HTTPDataserver.app.RetCodes;
 import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
@@ -163,15 +162,16 @@ public class Database {
 		return ret;
 	}
 
-	public String sync() {
-		RetCodes ret = new RetCodes("OK", "Syncing Replica");
+	public String[] sync() {
+		String[] ret = new String[2];
+		ret[0] ="OK"; ret[1] ="Syncing Replica";
 		if (type == DBType.REPLICA) {
 
 		} else {
-			ret.setCode("FAIL");
-			ret.setMessage("Only replicas must sync");
+			ret[0] = "FAIL";
+			ret[1] = "Only replicas must sync";
 		}
-		return ret.toJsonString();
+		return ret;
 	}
 
 	public String[] insert(String objectName, Object o) {

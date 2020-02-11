@@ -42,7 +42,7 @@ public class Insert extends MiniServlet {
 			
 			Object toInsert = cons[0].newInstance(params);
 			toInsert = cl.cast(toInsert);
-			ret[1] = dbs.get(dbname).insert(din.objectName, toInsert);
+			ret[1] = new Gson().toJson(dbs.get(dbname).insert(din.objectName, toInsert));
 		} catch (ClassNotFoundException e) {
 			log.log(Level.INFO, "Invalid object to insert");
 			log.log(Level.INFO, e.getMessage());
