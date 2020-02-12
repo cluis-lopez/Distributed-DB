@@ -145,6 +145,7 @@ public class Database {
 
 		if (ret[0].equals("OK")) { //All objects were cleanly closed (saved on disk files)
 			dSyncer.forceLog();
+			dSyncer.dbQueue.remove(dbname);
 			Path path = Paths.get(dataPath +"/"+ dbname +"_logging");
 			if (Files.isRegularFile(path)) {
 				try {
