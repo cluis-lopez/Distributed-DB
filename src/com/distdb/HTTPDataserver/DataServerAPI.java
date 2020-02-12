@@ -119,21 +119,24 @@ public class DataServerAPI implements Runnable {
 				ob.getClass().getMethod("initialize", Logger.class).invoke(ob, log);
 				ret = (String[]) ob.getClass().getMethod("doPost", Map.class, String.class, String.class).invoke(ob,
 						dbs, res[1], body);
+				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
+						+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 			} catch (ClassNotFoundException e) {
 				log.log(Level.INFO, "Invalid command");
 				log.log(Level.INFO, e.getMessage());
+				resp = "HTTP/1.1 400 Bad Request Invalid Command" + newLine + newLine;
 			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | NoSuchMethodException
 					| SecurityException e) {
 				log.log(Level.SEVERE, "Cannot instantiate command/servlet");
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+				resp = "HTTP/1.1 400 Bad Request Cannot instantiate command/servlet" + newLine + newLine;
 			} catch (InvocationTargetException e) {
 				log.log(Level.SEVERE, "Invocation Target Exception (problema al instanciar el servlet) ");
 				log.log(Level.SEVERE, e.getMessage());
 				log.log(Level.SEVERE, Arrays.toString(e.getCause().getStackTrace()));
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+				resp = "HTTP/1.1 400 Bad Request Servlet Inner Exception" + newLine + newLine;
 			}
-			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
-					+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 		}
 		return resp;
 	}

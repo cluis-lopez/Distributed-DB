@@ -24,6 +24,10 @@ import com.distdb.dbserver.Database;
 import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 @TestMethodOrder(OrderAnnotation.class)
@@ -72,8 +76,8 @@ public class DatabaseTest {
 		Assertions.assertEquals("OK", test2[0]);
 		String[] test3 = db.insert("User", u3);
 		Assertions.assertEquals("OK", test3[0]);
-		Map<String, String> map = db.getInfo();
-		Assertions.assertEquals(3, Integer.parseInt(map.get("User")));
+		JsonObject jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
+		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
 		// Inserts de objetos tipo event haciendo override del id
 		String[] test4 = db.insert("Event", e1);
 		Assertions.assertEquals("OK", test4[0]);
@@ -85,8 +89,8 @@ public class DatabaseTest {
 		//Insercion de objeto existente pero con la clase confundida
 		String [] test7 = db.insert("User", e2);
 		Assertions.assertEquals("Invalid Object", test7[1]);
-		map = db.getInfo();
-		Assertions.assertEquals(2, Integer.parseInt(map.get("Event")));
+		 jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
+		Assertions.assertEquals(2, jo.getAsJsonPrimitive("Event").getAsInt());
 
 	}
 
@@ -97,8 +101,8 @@ public class DatabaseTest {
 		Assertions.assertEquals("FAIL", test1[0]);
 		String test2[] = db.remove("User", u2.id);
 		Assertions.assertEquals("OK", test2[0]);
-		Map<String, String> map = db.getInfo();
-		Assertions.assertEquals(2, Integer.parseInt(map.get("User")));
+		JsonObject jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
+		Assertions.assertEquals(2, jo.getAsJsonPrimitive("User").getAsInt());
 	}
 
 	@Test
@@ -123,8 +127,8 @@ public class DatabaseTest {
 		Assertions.assertEquals("juanito", ((User) l.get(0)).name);
 		u4 = new User("lolita", "lolita@gmail.com", "7890");
 		db.insert("User", u4);
-		Map<String, String> map = db.getInfo();
-		Assertions.assertEquals(3, Integer.parseInt(map.get("User")));
+		JsonObject jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
+		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
 		l = new Gson().fromJson(db.searchByField("User", "mail", "gm")[2], dt);
 		Assertions.assertEquals(2, l.size());
 		Assertions.assertTrue(l.get(0).name.equals("clopez") ||  l.get(1).name.equals("clopez"));
@@ -148,9 +152,9 @@ public class DatabaseTest {
 	@Test
 	void testReOpen() {
 		db = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync, DBType.MASTER);
-		Map<String, String> map = db.getInfo();
-		Assertions.assertEquals(3, Integer.parseInt(map.get("User")));
-		Assertions.assertEquals(2, Integer.parseInt(map.get("Event")));
+		JsonObject jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
+		Assertions.assertEquals(3, Integer.parseInt(jo.getAsJsonObject("User").getAsString()));
+		Assertions.assertEquals(2, Integer.parseInt(jo.getAsJsonObject("Event").getAsString()));
 				
 		Object o = db.getById("User", u1.id);
 		System.err.println("Tipo de objeto " + o.getClass().getTypeName());
@@ -172,8 +176,8 @@ public class DatabaseTest {
 		//Reabrimos la BBDD Ahora debería de haber 5 usuarios y 3 eventos
 		
 		db = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync, DBType.MASTER);
-		Map<String, String> map2 = db.getInfo();
-		Assertions.assertEquals(5, Integer.parseInt(map2.get("User")));
-		Assertions.assertEquals(3, Integer.parseInt(map2.get("Event")));
+		 jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
+		 Assertions.assertEquals(3, jo.getAsJsonPrimitive("Event").getAsInt());
+		 Assertions.assertEquals(5, jo.getAsJsonPrimitive("User").getAsInt());
 	}
 }

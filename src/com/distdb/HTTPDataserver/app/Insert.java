@@ -9,16 +9,21 @@ import java.util.logging.Level;
 
 import com.distdb.dbserver.Database;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 public class Insert extends MiniServlet {
 
 	public String[] doPost(Map<String, Database> dbs, String dbname, String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
-		InsertDatain din = new Gson().fromJson(body, InsertDatain.class);
-		for (String s : din.args)
-			System.out.println(s);
-
+		InsertDatain din = null;
+		try {
+			din = new Gson().fromJson(body, InsertDatain.class);
+		} catch (JsonSyntaxException e) {
+			ret[1] = "Invalid Json request";
+			return ret;
+		}
+		
 		try {
 			Class<?> cl = Class.forName(dbs.get(dbname).defPath + "." + din.objectName);
 			Constructor<?>[] cons = cl.getConstructors();

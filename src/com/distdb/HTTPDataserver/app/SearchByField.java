@@ -6,8 +6,8 @@ import com.distdb.dbserver.Database;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
-public class GetById extends MiniServlet {
-
+public class SearchByField extends MiniServlet {
+	
 	public String[] doPost(Map<String, Database> dbs, String dbname, String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
@@ -18,19 +18,22 @@ public class GetById extends MiniServlet {
 			ret[1] = "Invalid Json request";
 			return ret;
 		}
-		String[] temp = dbs.get(dbname).getById(din.objectName, din.id);
+		
+		String[] temp = dbs.get(dbname).searchByField(din.objectName,  din.fieldName,  din.value);
 		if (!temp[0].equals("OK"))
-			ret[1] = new Gson().toJson(temp[1]);
+			ret[1] = temp[1];
 		else {
 			ret[1] = temp[2];
 		}
 		return ret;
 	}
-
+	
 	private class Datain {
 		String user;
 		String token;
 		String objectName;
-		String id;
+		String fieldName;
+		String value;
 	}
+
 }

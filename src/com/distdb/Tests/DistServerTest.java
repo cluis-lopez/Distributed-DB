@@ -15,6 +15,9 @@ import org.junit.jupiter.api.Test;
 import com.distdb.TestDB1.User;
 import com.distdb.dbserver.DistServer;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 class DistServerTest {
 
@@ -24,16 +27,34 @@ class DistServerTest {
 	static void setUpBeforeClass() throws Exception {
 		//DistServer ds = new DistServer();
 		//Assume you have to startup the server outside
+		//TestDB1 must be empty before starting
 	}
 
 	@Test
 	void testDistServer() {
-		String postData = "{'user': '', 'token': '',  'objectName': 'User', 'id': 'c480eb2d-6a67-4066-a07f-3a906bc60b89'}";
+		String postData = "{'user': '', 'token': '',  'objectName': 'User', 'args': [ 'clopez', 'clopez@gmail.com', '1234']}";
 		String db = "TestDB1";
-		String ret = sendData(db, "GetById", postData);
-		System.err.println(ret);
-		User u1 = new Gson().fromJson(ret, User.class);
-		Assertions.assertEquals("nuevoclopez", u1.name);
+		String ret = sendData(db, "Insert", postData);
+		JsonArray ja = new JsonParser().parse(ret).getAsJsonArray();
+		Assertions.assertEquals("OK", ja.get(0).getAsString());
+		postData = "{'user': '', 'token': '',  'objectName': 'User', 'args': [ 'manolo', 'manolo@hotmail.com', '1234']}";
+		ret = sendData(db, "Insert", postData);
+		ja = new JsonParser().parse(ret).getAsJsonArray();
+		Assertions.assertEquals("OK", ja.get(0).getAsString());
+		postData = "{'user': '', 'token': '',  'objectName': 'User', 'args': [ 'jacinto', 'jacinto@hotmail.com', '1234']}";
+		ret = sendData(db, "Insert", postData);
+		ja = new JsonParser().parse(ret).getAsJsonArray();
+		Assertions.assertEquals("OK", ja.get(0).getAsString());
+		postData = "{'user': '', 'token': '',  'command': 'dbInfo', 'payload': {}}";
+		ret = sendData(db, "AdminServer", postData);
+		JsonObject jo = new JsonParser().parse(ret).getAsJsonObject();
+		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
+		postData = "{'user': '', 'token': '',  'objectName': 'User', 'fieldName': 'name', 'value': 'lopez'}";
+		ret = sendData(db, "SearchByField", postData);
+		ja = new JsonParser().parse(ret).getAsJsonArray();
+		Assertions.assertEquals(1, ja.size());
+		com.distdb.TestDB1.User u1 = (User) new Gson().fromJson(ja.get(0), User.class);
+		Assertions.assertEquals("clopez", u1.name);
 	}
 
 	private String sendData(String database, String service, String postData) {
@@ -68,9 +89,7 @@ class DistServerTest {
 				ret = resultBuf.toString();
 				input.close();
 			} else {
-				System.out.println("Response    (Code):" + code);
-				System.out.println("Response (Message):" + con.getResponseMessage());
-				ret = code + ":" +con.getResponseMessage();
+				ret = code + " : " +con.getResponseMessage();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

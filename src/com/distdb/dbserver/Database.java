@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,8 +145,6 @@ public class Database {
 
 		if (ret[0].equals("OK")) { //All objects were cleanly closed (saved on disk files)
 			dSyncer.forceLog();
-			props.isProperlyShutdown = true;
-			updateProps();
 			Path path = Paths.get(dataPath +"/"+ dbname +"_logging");
 			if (Files.isRegularFile(path)) {
 				try {
@@ -157,6 +156,9 @@ public class Database {
 				}
 				log.log(Level.INFO, "Properly removed logging file for database "+ dbname);;
 			}
+			props.isProperlyShutdown = true;
+			props.lastProperlyShtdown = new Date();
+			updateProps();
 		}
 		return ret;
 	}
@@ -271,14 +273,16 @@ public class Database {
 		return ret;
 	}
 
-	public Map<String, String> getInfo() {
-		Map<String, String> ret = new HashMap<>();
-		ret.put("Name", dbname);
-		ret.put("Config File: ", propsFile);
+	public String getInfo() {
+		JsonObject jo = new JsonObject();
+		jo.addProperty("Name", dbname);
+		jo.addProperty("Config File", dataPath);
+		jo.addProperty("BDType", type.ordinal());
+		jo.addProperty("DB Last properly shutdown",  new GsonBuilder().setDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz").create().toJson(props.lastProperlyShtdown));
 		for (String s : dbobjs.keySet()) {
-			ret.put(s, Integer.toString(dbobjs.get(s).size()));
+			jo.addProperty(s, dbobjs.get(s).size());
 		}
-		return ret;
+		return jo.toString();
 	}
 
 	private void updateProps() {
@@ -296,6 +300,7 @@ public class Database {
 	private class Properties {
 		String dataPath;
 		boolean isProperlyShutdown;
+		Date lastProperlyShtdown;
 		boolean isAvailable;
 		boolean isReadOnly;
 
