@@ -35,7 +35,7 @@ public class Database {
 	private Logger log;
 	private String propsFile;
 	private DBType type;
-	private DiskSyncer dSyncer;
+	public DiskSyncer dSyncer;
 	private Properties props;
 
 	public Map<String, DBObject> dbobjs;
@@ -160,6 +160,7 @@ public class Database {
 			props.isProperlyShutdown = true;
 			props.lastProperlyShtdown = new Date();
 			updateProps();
+			ret[1] = "Database closed";
 		}
 		return ret;
 	}
@@ -269,7 +270,7 @@ public class Database {
 			ret[0] = "OK";
 			ret[1] = "Find "+temp.size()+" objects matching";
 		}
-		
+	
 		ret[2] = new Gson().toJson(temp, List.class);
 		return ret;
 	}

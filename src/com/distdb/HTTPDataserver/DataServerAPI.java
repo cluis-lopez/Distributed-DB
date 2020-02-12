@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.distdb.dbserver.Database;
+import com.distdb.dbsync.DiskSyncer;
 
 public class DataServerAPI implements Runnable {
 
@@ -24,14 +25,16 @@ public class DataServerAPI implements Runnable {
 	private Logger log;
 	private Map<String, Database> dbs;
 	private Socket socket;
+	private DiskSyncer dSync;
 
 	private Map<String, String> headerFields;
 	private String body;
 
-	public DataServerAPI(Logger log, Socket s, Map<String, Database> dbs) {
+	public DataServerAPI(Logger log, Socket s, Map<String, Database> dbs, DiskSyncer dSync) {
 		this.log = log;
 		this.dbs = dbs;
 		this.socket = s;
+		this.dSync = dSync;
 		headerFields = new HashMap<>();
 		body = null;
 	}
@@ -109,16 +112,14 @@ public class DataServerAPI implements Runnable {
 		String[] res = req.resource.split("/"); // First element should be DataBase name, Second must be the command
 		if (res == null || res.length != 3) {
 			resp = "HTTP/1.1 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
-		} else if (dbs.get(res[1]) == null) {
-			resp = "HTTP/1.1 400 Bad Request (Non-Existant Database)" + newLine + newLine;
 		} else {
 			try {
 				Class<?> cl = Class.forName("com.distdb.HTTPDataserver.app." + res[2]);
 				Constructor<?> cons = cl.getConstructor();
 				ob = cons.newInstance(null);
 				ob.getClass().getMethod("initialize", Logger.class).invoke(ob, log);
-				ret = (String[]) ob.getClass().getMethod("doPost", Map.class, String.class, String.class).invoke(ob,
-						dbs, res[1], body);
+				ret = (String[]) ob.getClass().getMethod("doPost", Map.class, String.class, String.class, DiskSyncer.class).invoke(ob,
+						dbs, res[1], body, dSync);
 				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
 						+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 			} catch (ClassNotFoundException e) {

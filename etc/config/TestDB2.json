@@ -1,6 +1,7 @@
 {
   "dataPath": "etc/data/TestDB2",
-  "isProperlyShutdown": false,
+  "isProperlyShutdown": true,
+  "lastProperlyShtdown": "Feb 12, 2020 7:26:08 PM",
   "isAvailable": false,
   "isReadOnly": false,
   "objects": [

@@ -47,14 +47,54 @@ class DistServerTest {
 		Assertions.assertEquals("OK", ja.get(0).getAsString());
 		postData = "{'user': '', 'token': '',  'command': 'dbInfo', 'payload': {}}";
 		ret = sendData(db, "AdminServer", postData);
-		JsonObject jo = new JsonParser().parse(ret).getAsJsonObject();
+		ja = new JsonParser().parse(ret).getAsJsonArray();
+		JsonObject jo = ja.get(2).getAsJsonObject();
 		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
 		postData = "{'user': '', 'token': '',  'objectName': 'User', 'fieldName': 'name', 'value': 'lopez'}";
 		ret = sendData(db, "SearchByField", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
-		Assertions.assertEquals(1, ja.size());
-		com.distdb.TestDB1.User u1 = (User) new Gson().fromJson(ja.get(0), User.class);
+		JsonArray ja2 = ja.get(2).getAsJsonArray();
+		Assertions.assertEquals(1, ja2.size());
+		com.distdb.TestDB1.User u1 = (User) new Gson().fromJson(ja2.get(0), User.class);
 		Assertions.assertEquals("clopez", u1.name);
+		
+		postData = "{'user': '', 'token': '',  'objectName': 'Event', 'args': [ 'Evento1', 'Lo del coronavirus', 'en Barcelona']}";
+		ret = sendData(db, "Insert", postData);
+		postData = "{'user': '', 'token': '',  'objectName': 'Event', 'args': [ 'Evento2', 'Lo de los moviles', 'sine die']}";
+		ret = sendData(db, "Insert", postData);
+		postData = "{'user': '', 'token': '',  'command': 'dbInfo', 'payload': {}}";
+		ret = sendData(db, "AdminServer", postData);
+		ja = new JsonParser().parse(ret).getAsJsonArray();
+		jo = ja.get(2).getAsJsonObject();
+		Assertions.assertEquals(2, jo.getAsJsonPrimitive("Event").getAsInt());
+		
+		//3 "User" and 2 "Events" in the database
+		// Close and restart
+		try {
+			Thread.sleep(40000); //Wait 40 seconds for the syncer to write on disk
+		} catch (InterruptedException e) {
+			
+		}
+		postData = "{'user': '', 'token': '',  'command': 'shutdown', 'payload': {}}";
+		ret = sendData(db, "AdminServer", postData);
+		ja = new JsonParser().parse(ret).getAsJsonArray();
+		Assertions.assertEquals("OK", ja.get(0).getAsString());
+		Assertions.assertEquals("Database closed", ja.get(1).getAsString());
+		postData = "{'user': '', 'token': '',  'command': 'startup', 'payload': {'configFile': 'TestDB1.json', 'defPath': 'com.distdb.TestDB1', 'DBType': 'Master'}}";
+		ret = sendData(db, "AdminServer", postData);
+		ja = new JsonParser().parse(ret).getAsJsonArray();
+		Assertions.assertEquals("OK", ja.get(0).getAsString());
+		postData = "{'user': '', 'token': '',  'command': 'dbInfo', 'payload': {}}";
+		ret = sendData(db, "AdminServer", postData);
+		ja = new JsonParser().parse(ret).getAsJsonArray();
+		jo = ja.get(2).getAsJsonObject();
+		Assertions.assertEquals(2, jo.getAsJsonPrimitive("Event").getAsInt());
+		postData = "{'user': '', 'token': '',  'command': 'dbInfo', 'payload': {}}";
+		ret = sendData(db, "AdminServer", postData);
+		ja = new JsonParser().parse(ret).getAsJsonArray();
+		jo = ja.get(2).getAsJsonObject();
+		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
+		
 	}
 
 	private String sendData(String database, String service, String postData) {

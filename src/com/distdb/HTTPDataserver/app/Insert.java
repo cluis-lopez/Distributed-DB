@@ -8,19 +8,21 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import com.distdb.dbserver.Database;
+import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
+import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
 public class Insert extends MiniServlet {
 
-	public String[] doPost(Map<String, Database> dbs, String dbname, String body) {
+	public String[] doPost(Map<String, Database> dbs, String dbname, String body, DiskSyncer dsync) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		InsertDatain din = null;
 		try {
 			din = new Gson().fromJson(body, InsertDatain.class);
-		} catch (JsonSyntaxException e) {
-			ret[1] = "Invalid Json request";
+		} catch (JsonIOException | JsonSyntaxException e) {
+			ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json request", "");
 			return ret;
 		}
 		
@@ -28,15 +30,15 @@ public class Insert extends MiniServlet {
 			Class<?> cl = Class.forName(dbs.get(dbname).defPath + "." + din.objectName);
 			Constructor<?>[] cons = cl.getConstructors();
 			if (cons == null || cons.length == 0 || cons.length>1) {
-				ret[1] = "Database objects must have a single constructor while "+din.objectName+" has "+cons.length;
+				ret[1] = HelperJson.returnCodes("FAIL", "Database objects must have a single constructor while "+din.objectName+" has "+cons.length, "");
 				return ret;
 			}
 			
 			Class<?>[] consArgs = cons[0].getParameterTypes();
 			
 			if (din.args.size() != consArgs.length) {
-				ret[1] = "Number of arguments mismatch. Used: " + din.args.size() + " while object " + din.objectName
-						+ "constructor, expects " + consArgs.length;
+				ret[1] = HelperJson.returnCodes("FAIL","Number of arguments mismatch. Used: " + din.args.size() + " while object " + din.objectName
+						+ "constructor, expects " + consArgs.length, "");
 				return ret;
 			}
 			
@@ -47,7 +49,8 @@ public class Insert extends MiniServlet {
 			
 			Object toInsert = cons[0].newInstance(params);
 			toInsert = cl.cast(toInsert);
-			ret[1] = new Gson().toJson(dbs.get(dbname).insert(din.objectName, toInsert));
+			String[] temp = (dbs.get(dbname).insert(din.objectName, toInsert));
+			ret[1] = HelperJson.returnCodes(temp[0], temp[1],  "");
 		} catch (ClassNotFoundException e) {
 			log.log(Level.INFO, "Invalid object to insert");
 			log.log(Level.INFO, e.getMessage());
