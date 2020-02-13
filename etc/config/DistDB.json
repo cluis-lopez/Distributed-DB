@@ -3,6 +3,7 @@
     "dataPort": 8080,
     "clusterPort": 8081,
     "syncTime": 30,
+    "adminRootPath": "etc/root"
     
     "nodes": [
     {"name": "ThisNode", "url": "http://localhost:8081", "type": "Master", "nodeType": "Master"},

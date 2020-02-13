@@ -23,6 +23,7 @@ public class DataServerAPI implements Runnable {
 
 	private static final String newLine = "\r\n";
 	private Logger log;
+	private String adminRootPath;
 	private Map<String, Database> dbs;
 	private Socket socket;
 	private DiskSyncer dSync;
@@ -30,8 +31,9 @@ public class DataServerAPI implements Runnable {
 	private Map<String, String> headerFields;
 	private String body;
 
-	public DataServerAPI(Logger log, Socket s, Map<String, Database> dbs, DiskSyncer dSync) {
+	public DataServerAPI(Logger log, Socket s, String adminRootPath, Map<String, Database> dbs, DiskSyncer dSync) {
 		this.log = log;
+		this.adminRootPath = adminRootPath;
 		this.dbs = dbs;
 		this.socket = s;
 		this.dSync = dSync;
@@ -144,7 +146,18 @@ public class DataServerAPI implements Runnable {
 
 	// HTTP Get should be reserved for static files
 	private String processGet(HeaderDecoder req) {
-		return "";
+		String[] ret = new String[2];
+		String resp;
+		
+			doFile df = new doFile(log, adminRootPath);
+			ret = df.doGet(req.resource.substring(1));
+			if (ret[0].equals("")) { // No file found
+				resp = "HTTP/1.0 404 " + ret[1] + newLine + newLine;
+			} else {
+				resp = "HTTP/1.0 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
+						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			}
+			return resp;
 	}
 
 }

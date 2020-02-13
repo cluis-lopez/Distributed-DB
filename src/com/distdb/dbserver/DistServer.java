@@ -158,7 +158,7 @@ public class DistServer {
 				log.log(Level.WARNING, "Cannot launch thread to accept client: " + client.toString());
 				log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
 			}
-			final DataServerAPI request = new DataServerAPI(log, client, dbs, dsync);
+			final DataServerAPI request = new DataServerAPI(log, client, props.adminRootPath, dbs, dsync);
 			Thread thread = new Thread(request);
 			thread.setName("Request Dispatcher #" + thread.getId());
 			thread.start();;
@@ -170,6 +170,7 @@ public class DistServer {
 		int dataPort;
 		int clusterPort;
 		int syncTime;
+		String adminRootPath;
 		List<Map<String, String>> nodes;
 		List<Map<String, String>> databases;
 	}
