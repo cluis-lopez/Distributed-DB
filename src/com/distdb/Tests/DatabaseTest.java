@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -21,11 +20,9 @@ import org.junit.jupiter.api.TestMethodOrder;
 import com.distdb.TestDB1.Event;
 import com.distdb.TestDB1.User;
 import com.distdb.dbserver.Database;
-import com.distdb.dbserver.DistServer.DBType;
+import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -57,8 +54,9 @@ public class DatabaseTest {
 			e.printStackTrace();
 		}
 		
+		
 		dsync = new DiskSyncer(log,30);
-		db = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync, DBType.MASTER);
+		db = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync);
 		u1 = new User("clopez", "clopez@gmail.com", "1234");
 		u2 = new User("mariano", "mrajoy@hotmail.com", "1234");
 		u3 = new User("juanito", "juanito@hotmail.com", "1234");
@@ -69,6 +67,8 @@ public class DatabaseTest {
 	@Test
 	@Order(1)
 	void testInsert() {
+		String[] s = db.open();
+		Assertions.assertTrue(s[0].equals("OK"));
 		// Inserts de objetos tipo User
 		String[] test1 = db.insert("User", u1);
 		Assertions.assertEquals("OK", test1[0]);
@@ -151,10 +151,11 @@ public class DatabaseTest {
 
 	@Test
 	void testReOpen() {
-		db = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync, DBType.MASTER);
+		db = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync);
+		db.open();
 		JsonObject jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
-		Assertions.assertEquals(3, Integer.parseInt(jo.getAsJsonObject("User").getAsString()));
-		Assertions.assertEquals(2, Integer.parseInt(jo.getAsJsonObject("Event").getAsString()));
+		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
+		Assertions.assertEquals(2, jo.getAsJsonPrimitive("Event").getAsInt());
 				
 		Object o = db.getById("User", u1.id);
 		System.err.println("Tipo de objeto " + o.getClass().getTypeName());
@@ -175,7 +176,8 @@ public class DatabaseTest {
 		
 		//Reabrimos la BBDD Ahora debería de haber 5 usuarios y 3 eventos
 		
-		db = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync, DBType.MASTER);
+		db = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync);
+		db.open();
 		 jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
 		 Assertions.assertEquals(3, jo.getAsJsonPrimitive("Event").getAsInt());
 		 Assertions.assertEquals(5, jo.getAsJsonPrimitive("User").getAsInt());

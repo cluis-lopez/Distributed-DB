@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.distdb.dbserver.Database;
+import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbsync.DiskSyncer;
 
 public class DataServerAPI implements Runnable {
@@ -149,8 +150,7 @@ public class DataServerAPI implements Runnable {
 		String[] ret = new String[2];
 		String resp;
 		
-			doFile df = new doFile(log, adminRootPath);
-			ret = df.doGet(req.resource.substring(1));
+			ret = new doFile(log, adminRootPath).doGet(req.resource.substring(1));
 			if (ret[0].equals("")) { // No file found
 				resp = "HTTP/1.0 404 " + ret[1] + newLine + newLine;
 			} else {

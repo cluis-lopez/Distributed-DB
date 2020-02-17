@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.dbserver.Database;
+import com.distdb.dbserver.MasterDatabase;
 
 public class ClusterHTTPRequest implements Runnable {
 

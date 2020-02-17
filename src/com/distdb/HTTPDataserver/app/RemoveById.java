@@ -2,13 +2,13 @@ package com.distdb.HTTPDataserver.app;
 
 import java.util.Map;
 
-import com.distdb.dbserver.Database;
+import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
 
 public class RemoveById extends MiniServlet {
 
-	public String[] doPost(Map<String, Database> dbs, String dbname, String body, DiskSyncer dsync) {
+	public String[] doPost(Map<String, MasterDatabase> dbs, String dbname, String body, DiskSyncer dsync) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		Datain din = new Gson().fromJson(body, Datain.class);

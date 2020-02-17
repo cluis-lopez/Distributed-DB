@@ -102,7 +102,6 @@ public class DistServer {
 		}
 		
 		//Initialize Databases
-		
 		DBType serverType;
 		DiskSyncer dsync = null;
 		MasterSyncerServer masterSyncerServer = null;
@@ -118,7 +117,9 @@ public class DistServer {
 
 		for (Map<String, String> m : props.databases) {
 			System.err.println("Inicializando Database: " + m.get("name"));
-			dbs.put(m.get("name"), new Database(log, m.get("name"), m.get("defFile"), m.get("defPath"), dsync, serverType));
+			dbs.put(m.get("name"), new MasterDatabase(log, m.get("name"), m.get("defFile"), m.get("defPath"), dsync));
+			if (m.get("autoStart") != null && (m.get("autoStart").equals("y") || m.get("autoStart").equals("Y")))
+				dbs.get(m.get("name")).open();
 		}
 
 		// Start Disk Sync Server

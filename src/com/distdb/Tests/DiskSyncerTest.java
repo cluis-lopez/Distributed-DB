@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -17,9 +18,11 @@ import com.distdb.TestDB1.Event;
 import com.distdb.TestDB1.User;
 import com.distdb.TestDB2.Brands;
 import com.distdb.TestDB2.Cars;
-import com.distdb.dbserver.Database;
+import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
@@ -28,8 +31,8 @@ class DiskSyncerTest {
 
 	static Logger log = Logger.getLogger("DistServer");
 	static final int waitTime = 10 * 1000;
-	static Database db1;
-	static Database db2;
+	static MasterDatabase db1;
+	static MasterDatabase db2;
 	static DiskSyncer dSyncer;
 
 	@BeforeAll
@@ -56,8 +59,12 @@ class DiskSyncerTest {
 			}
 		}
 
-		db1 = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dSyncer, DBType.MASTER);
-		db2 = new Database(log, "TestDB2", "TestDB2.json", "com.distdb.TestDB2", dSyncer, DBType.MASTER);
+		db1 = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dSyncer);
+		String[] s = db1.open();
+		Assertions.assertTrue(s[0].equals("OK"));
+		db2 = new MasterDatabase(log, "TestDB2", "TestDB2.json", "com.distdb.TestDB2", dSyncer);
+		s = db2.open();
+		Assertions.assertTrue(s[0].equals("OK"));
 	}
 
 	@Test
@@ -133,13 +140,22 @@ class DiskSyncerTest {
 		
 		System.out.println("Reopen Databases");
 		dSyncer = new DiskSyncer(log, waitTime);
-		db1 = new Database(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dSyncer, DBType.MASTER);
-		db2 = new Database(log, "TestDB2", "TestDB2.json", "com.distdb.TestDB2", dSyncer, DBType.MASTER);
+		db1 = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dSyncer);
+		String[] s = db1.open();
+		Assertions.assertTrue(s[0].equals("OK"));
+		db2 = new MasterDatabase(log, "TestDB2", "TestDB2.json", "com.distdb.TestDB2", dSyncer);
+		s = db2.open();
+		Assertions.assertTrue(s[0].equals("OK"));
 		dSyncer.addDatabase("TestDB1", db1.dbobjs, db1.dataPath);
 		dSyncer.addDatabase("TestDB2", db2.dbobjs, db2.dataPath);
 		
-		//Assertions.assertEquals(b2.id, ((Brands) db2.getById("Brands", b2.id)).id);
-		//Assertions.assertEquals("Ferrari", ((Brands) db2.searchByField("Brands", "name", "ari").get(0)).name);
+		User temp = new Gson().fromJson(db2.getById("Brands", b2.id)[2], User.class);
+		Assertions.assertEquals(b2.id, temp.id);
+		
+		java.lang.reflect.Type dt = TypeToken.getParameterized(List.class, Brands.class).getType();
+		List<Brands> l = new Gson().fromJson(db2.searchByField("Brands", "name", "ari")[2], dt);
+		Assertions.assertTrue(l.get(0).name.equals("Ferrari"));;
+		
 		db1.close();
 		db2.close();
 		dSyncer.kill();

@@ -1,7 +1,7 @@
 package com.distdb.HTTPDataserver.app;
 
 import java.util.Map;
-import com.distdb.dbserver.Database;
+import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.DiskSyncer;
 import com.google.gson.Gson;
@@ -10,7 +10,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 
 public class AdminServer extends MiniServlet {
-	public String[] doPost(Map<String, Database> dbs, String dbname, String body, DiskSyncer dSync) {
+	public String[] doPost(Map<String, MasterDatabase> dbs, String dbname, String body, DiskSyncer dSync) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		ret[1] =HelperJson.returnCodes("FAIL",  "Invalid management command", "");
@@ -28,15 +28,15 @@ public class AdminServer extends MiniServlet {
 			
 			if (din.command.equals("startup")) {
 				if (dbs.get(dbname) != null) {
-					ret[1] = HelperJson.returnCodes("FAIL", "Database already running", "");
+					ret[1] = HelperJson.returnCodes("FAIL", "Database already loaded", "");
 				} else {
 					String configFile = din.payload.get("configFile").getAsString();
 					String defPath = din.payload.get("defPath").getAsString();
 					String dbt = din.payload.get("DBType").getAsString();
-					DBType dbtype = DBType.REPLICA;
-					if (dbt.equals("Master") || dbt.equals("MASTER"))
-							dbtype = DBType.MASTER;
-					dbs.put(dbname, new Database(log, dbname, configFile, defPath, dSync, dbtype));
+					if (dbt.equals("Master") || dbt.equals("MASTER")) {
+						dbs.put(dbname, new MasterDatabase(log, dbname, configFile, defPath, dSync));
+						dbs.get(dbname).open();
+					}
 					ret[1] = HelperJson.returnCodes("OK", dbname + "Database started", "");
 				}
 			}

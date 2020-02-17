@@ -10,7 +10,10 @@ import java.net.URL;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import com.distdb.TestDB1.User;
 import com.distdb.dbserver.DistServer;
@@ -19,6 +22,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+@TestMethodOrder(OrderAnnotation.class)
 class DistServerTest {
 
 	public static final String url = "http://localhost:8080";
@@ -31,6 +35,7 @@ class DistServerTest {
 	}
 
 	@Test
+	@Order(1)
 	void testDistServer() {
 		String postData = "{'user': '', 'token': '',  'objectName': 'User', 'args': [ 'clopez', 'clopez@gmail.com', '1234']}";
 		String db = "TestDB1";
@@ -94,6 +99,12 @@ class DistServerTest {
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		jo = ja.get(2).getAsJsonObject();
 		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
+		
+	}
+	
+	@Test
+	@Order(2)
+	void testGETServer() {
 		
 	}
 
