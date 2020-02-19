@@ -8,14 +8,21 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.distdb.HttpHelpers.HeaderDecoder;
+import com.distdb.HttpHelpers.HelperJson;
 import com.distdb.dbserver.Cluster;
-import com.distdb.dbserver.MasterDatabase;
+import com.distdb.dbserver.DBObject;
+import com.distdb.dbserver.Database;
+import com.distdb.dbserver.DistServer.DBType;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class ClusterHTTPRequest implements Runnable {
 
@@ -23,14 +30,16 @@ public class ClusterHTTPRequest implements Runnable {
 	private Logger log;
 	private Socket socket;
 	private Cluster cluster;
+	private Map<String, Database> dbs;
 
 	private Map<String, String> headerFields;
 	private String body;
 
-	public ClusterHTTPRequest(Logger log, Socket s, Cluster cluster) {
+	public ClusterHTTPRequest(Logger log, Socket s, Cluster cluster, Map<String, Database> dbs) {
 		this.log = log;
 		this.socket = s;
 		this.cluster = cluster;
+		this.dbs = dbs;
 		headerFields = new HashMap<>();
 		body = null;
 	}
@@ -73,14 +82,13 @@ public class ClusterHTTPRequest implements Runnable {
 
 			String response = "";
 
-			boolean reqValid = (reqLine.command.equals("GET") || reqLine.command.equals("POST"))
+			// Only POSTs are allowed
+			boolean reqValid = reqLine.command.equals("POST") && body.length() != 0
 					&& (reqLine.protocol.equals("HTTP/1.0") || reqLine.protocol.equals("HTTP/1.1"));
 
-			if (reqValid && reqLine.command.equals("GET"))
-				response = processGet(reqLine);
-			if (reqValid && reqLine.command.equals("POST"))
-				response = processPost(reqLine);
-			if (!reqValid) // Bad Request
+			if (reqValid)
+				response = processPost(reqLine, body);
+			else// Bad Request
 				response = "HTTP/1.0 400 Bad Request" + newLine + newLine;
 
 			pout.print(response);
@@ -94,13 +102,68 @@ public class ClusterHTTPRequest implements Runnable {
 		}
 
 	}
-	public String processGet(HeaderDecoder reqLine) {
+
+	public String processPost(HeaderDecoder reqLine, String body) {
+		String[] ret = new String[2];
 		String resp = "";
+		
+		String[] res = reqLine.resource.split("/"); // First element should be DataBase name, Second must be the command
+		if (res == null || res.length <2 || res.length>3) {
+			resp = "HTTP/1.1 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
+		} else  if(res[1].equals("ping")) {
+			ret = answerPing(body);
+		} else if (res.length  == 3) {
+			String dbname = res[1];
+			String operation = ret[2];
+		}
+		resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
+				+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 		return resp;
 	}
 	
-	public String processPost(HeaderDecoder  reqLine) {
-		String resp = "";
-		return resp;
+	private String[] answerPing(String body) {
+		String[] ret = new String[2];
+		ret[0] = "application/json";
+		JsonElement je = new JsonParser().parse(body);
+		if (je.isJsonObject()) {
+			JsonObject jo = je.getAsJsonObject();
+			String user = jo.get("user").getAsString();
+			String token = jo.get("token").getAsString();
+			if (true) { // Reserved for authentication
+				ret[1] = HelperJson.returnCodes("OK", cluster.myURL.toString(), "");
+			}
+		} else {
+			ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json command", "");
+		}
+		return ret;
+	}
+	
+	private String[] sendObjects(String dbName, String body) {
+		String[] ret = new String[2];
+		ret[0] = "application/json";
+		JsonElement je = new JsonParser().parse(body);
+		if (cluster.myType == DBType.REPLICA) {
+			ret[1] = HelperJson.returnCodes("FAIL", "Replicas cannot send object collections", "");
+			return ret;
+		}
+		if (je.isJsonObject()) {
+			JsonObject jo = je.getAsJsonObject();
+			String user = jo.get("user").getAsString();
+			String token = jo.get("token").getAsString();
+			if (true) { // Reserved for authentication
+				String objectName = jo.get("objectName").getAsString();
+				DBObject dbo = null;
+				if (dbs.get(dbName) != null)
+					dbo = dbs.get(dbName).dbobjs.get("objectName");
+				if (dbo == null) {
+					ret[1] = HelperJson.returnCodes("FAIL", "Invalid database name or object collection name", "");
+					return ret;
+				}
+				//Send the collection of the requested object
+			}
+		} else {
+			ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json command", "");
+		}
+		return ret;
 	}
 }

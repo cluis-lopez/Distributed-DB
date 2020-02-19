@@ -116,7 +116,7 @@ public class DistServer {
 
 		if (type == DBType.MASTER) {
 			dsync = new MasterSyncer(log, cluster, 1000 * props.syncDiskTime, 1000 * props.syncNetTime);
-			clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster);
+			clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster, dbs);
 		} else {
 			//TODO
 		}

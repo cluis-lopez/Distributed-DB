@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+import com.distdb.HttpHelpers.HelperJson;
 import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;

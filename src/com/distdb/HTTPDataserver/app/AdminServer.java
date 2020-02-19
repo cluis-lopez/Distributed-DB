@@ -1,8 +1,9 @@
 package com.distdb.HTTPDataserver.app;
 
 import java.util.Map;
+
+import com.distdb.HttpHelpers.HelperJson;
 import com.distdb.dbserver.MasterDatabase;
-import com.distdb.dbserver.DistServer.DBType;
 import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;

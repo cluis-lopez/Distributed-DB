@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 
 import com.distdb.dbserver.Node;
 import com.distdb.dbserver.Cluster;
+import com.distdb.dbserver.Database;
 import com.distdb.dbserver.DistServer.DBType;
 
 public class ClusterHTTPServer implements Runnable {
@@ -19,10 +20,12 @@ public class ClusterHTTPServer implements Runnable {
 	private Logger log;
 	private boolean keepRunning;
 	private Cluster cluster;
+	Map<String, Database> dbs;
 
-	public ClusterHTTPServer(int port, Cluster cluster) {
+	public ClusterHTTPServer(int port, Cluster cluster, Map<String, Database> dbs) {
 		this.clusterPort = port;
 		this.cluster = cluster;
+		this.dbs = dbs;
 	}
 
 	@Override
@@ -51,7 +54,7 @@ public class ClusterHTTPServer implements Runnable {
 				log.log(Level.WARNING, "Cannot launch thread to accept client: " + client.toString());
 				log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
 			}
-			final ClusterHTTPRequest request = new ClusterHTTPRequest(log, client, cluster);
+			final ClusterHTTPRequest request = new ClusterHTTPRequest(log, client, cluster, dbs);
 			Thread thread = new Thread(request);
 			thread.start();
 		}
