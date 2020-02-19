@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 
 import com.distdb.dbserver.Database;
 import com.distdb.dbserver.MasterDatabase;
-import com.distdb.dbsync.DiskSyncer;
+import com.distdb.dbsync.MasterSyncer;
 
 public class DataServerAPI implements Runnable {
 
@@ -27,12 +27,12 @@ public class DataServerAPI implements Runnable {
 	private String adminRootPath;
 	private Map<String, Database> dbs;
 	private Socket socket;
-	private DiskSyncer dSync;
+	private MasterSyncer dSync;
 
 	private Map<String, String> headerFields;
 	private String body;
 
-	public DataServerAPI(Logger log, Socket s, String adminRootPath, Map<String, Database> dbs, DiskSyncer dSync) {
+	public DataServerAPI(Logger log, Socket s, String adminRootPath, Map<String, Database> dbs, MasterSyncer dSync) {
 		this.log = log;
 		this.adminRootPath = adminRootPath;
 		this.dbs = dbs;
@@ -121,7 +121,7 @@ public class DataServerAPI implements Runnable {
 				Constructor<?> cons = cl.getConstructor();
 				ob = cons.newInstance(null);
 				ob.getClass().getMethod("initialize", Logger.class).invoke(ob, log);
-				ret = (String[]) ob.getClass().getMethod("doPost", Map.class, String.class, String.class, DiskSyncer.class).invoke(ob,
+				ret = (String[]) ob.getClass().getMethod("doPost", Map.class, String.class, String.class, MasterSyncer.class).invoke(ob,
 						dbs, res[1], body, dSync);
 				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
 						+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];

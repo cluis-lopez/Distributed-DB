@@ -10,18 +10,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.distdb.dbserver.Node;
+import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.DistServer.DBType;
 
-public class MasterSyncerServer implements Runnable {
+public class ClusterHTTPServer implements Runnable {
 
 	private int clusterPort;
 	private Logger log;
 	private boolean keepRunning;
-	private Map<DBType, List<Node>> nodes;
+	private Cluster cluster;
 
-	public MasterSyncerServer(int port, Map<DBType,List<Node>> nodes) {
+	public ClusterHTTPServer(int port, Cluster cluster) {
 		this.clusterPort = port;
-		this.nodes = nodes;
+		this.cluster = cluster;
 	}
 
 	@Override
@@ -50,7 +51,7 @@ public class MasterSyncerServer implements Runnable {
 				log.log(Level.WARNING, "Cannot launch thread to accept client: " + client.toString());
 				log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
 			}
-			final ClusterHTTPRequest request = new ClusterHTTPRequest(log, client);
+			final ClusterHTTPRequest request = new ClusterHTTPRequest(log, client, cluster);
 			Thread thread = new Thread(request);
 			thread.start();
 		}

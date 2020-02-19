@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.dbsync.DiskSyncer;
+import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -24,7 +24,7 @@ public class ReplicaDatabase extends Database {
 
 	public Map<String, DBObject> dbobjs;
 	
-	public ReplicaDatabase(Logger log, String dbname, String config, String defPath, URL masterSyncServer) {
+	public ReplicaDatabase(Logger log, String dbname, String config, String defPath, URL myMaster) {
 		super(log, dbname, config, defPath);
 	}
 	
@@ -90,7 +90,7 @@ public class ReplicaDatabase extends Database {
 		return null;
 	}
 	
-	private void updateProps() {
+	protected void updateProps() {
 		try {
 			FileWriter fw = new FileWriter(propsFile);
 			Gson json = new GsonBuilder().setPrettyPrinting().create();

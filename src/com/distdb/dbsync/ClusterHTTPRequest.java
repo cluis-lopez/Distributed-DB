@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.MasterDatabase;
 
 public class ClusterHTTPRequest implements Runnable {
@@ -21,13 +22,15 @@ public class ClusterHTTPRequest implements Runnable {
 	private static final String newLine = "\r\n";
 	private Logger log;
 	private Socket socket;
+	private Cluster cluster;
 
 	private Map<String, String> headerFields;
 	private String body;
 
-	public ClusterHTTPRequest(Logger log, Socket s) {
+	public ClusterHTTPRequest(Logger log, Socket s, Cluster cluster) {
 		this.log = log;
 		this.socket = s;
+		this.cluster = cluster;
 		headerFields = new HashMap<>();
 		body = null;
 	}

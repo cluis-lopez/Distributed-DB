@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.dbsync.DiskSyncer;
+import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -33,7 +33,7 @@ import com.google.gson.reflect.TypeToken;
 public class MasterDatabase extends Database {
 
 	public String dataPath;
-	public DiskSyncer dSyncer;
+	public MasterSyncer dSyncer;
 
 	/**
 	 * @param log
@@ -43,7 +43,7 @@ public class MasterDatabase extends Database {
 	 * @param dSyncer
 	 * @param type
 	 */
-	public MasterDatabase(Logger log, String dbname, String config, String defPath, DiskSyncer dSyncer) {
+	public MasterDatabase(Logger log, String dbname, String config, String defPath, MasterSyncer dSyncer) {
 		super(log, dbname, config, defPath);
 		this.dSyncer = dSyncer;
 		this.dataPath = props.dataPath;
@@ -124,7 +124,7 @@ public class MasterDatabase extends Database {
 		log.log(Level.INFO, "Closing database: " + dbname);
 
 		if (ret[0].equals("OK")) { // All objects were cleanly closed (saved on disk files)
-			dSyncer.forceLog();
+			dSyncer.diskLog();
 			dSyncer.dbQueue.remove(dbname);
 			Path path = Paths.get(dataPath + "/" + dbname + "_logging");
 			if (Files.isRegularFile(path)) {

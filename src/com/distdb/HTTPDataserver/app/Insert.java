@@ -8,14 +8,14 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import com.distdb.dbserver.MasterDatabase;
-import com.distdb.dbsync.DiskSyncer;
+import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
 public class Insert extends MiniServlet {
 
-	public String[] doPost(Map<String, MasterDatabase> dbs, String dbname, String body, DiskSyncer dsync) {
+	public String[] doPost(Map<String, MasterDatabase> dbs, String dbname, String body, MasterSyncer dsync) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		InsertDatain din = null;

@@ -21,7 +21,7 @@ import com.distdb.TestDB1.Event;
 import com.distdb.TestDB1.User;
 import com.distdb.dbserver.Database;
 import com.distdb.dbserver.MasterDatabase;
-import com.distdb.dbsync.DiskSyncer;
+import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -30,7 +30,7 @@ import com.google.gson.reflect.TypeToken;
 @TestMethodOrder(OrderAnnotation.class)
 public class DatabaseTest {
 	static Logger log = Logger.getLogger("DistServer");
-	static DiskSyncer dsync;
+	static MasterSyncer dsync;
 	static Database db;
 	static User u1, u2, u3, u4;
 	static Event e1, e2, e3, e4;
@@ -55,7 +55,7 @@ public class DatabaseTest {
 		}
 		
 		
-		dsync = new DiskSyncer(log,30);
+		dsync = new MasterSyncer(log,30);
 		db = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync);
 		u1 = new User("clopez", "clopez@gmail.com", "1234");
 		u2 = new User("mariano", "mrajoy@hotmail.com", "1234");

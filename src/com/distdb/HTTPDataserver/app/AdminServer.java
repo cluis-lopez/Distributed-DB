@@ -3,14 +3,14 @@ package com.distdb.HTTPDataserver.app;
 import java.util.Map;
 import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbserver.DistServer.DBType;
-import com.distdb.dbsync.DiskSyncer;
+import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 
 public class AdminServer extends MiniServlet {
-	public String[] doPost(Map<String, MasterDatabase> dbs, String dbname, String body, DiskSyncer dSync) {
+	public String[] doPost(Map<String, MasterDatabase> dbs, String dbname, String body, MasterSyncer dSync) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		ret[1] =HelperJson.returnCodes("FAIL",  "Invalid management command", "");

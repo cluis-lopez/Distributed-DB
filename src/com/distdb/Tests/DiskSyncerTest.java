@@ -20,7 +20,7 @@ import com.distdb.TestDB2.Brands;
 import com.distdb.TestDB2.Cars;
 import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbserver.DistServer.DBType;
-import com.distdb.dbsync.DiskSyncer;
+import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -33,11 +33,11 @@ class DiskSyncerTest {
 	static final int waitTime = 10 * 1000;
 	static MasterDatabase db1;
 	static MasterDatabase db2;
-	static DiskSyncer dSyncer;
+	static MasterSyncer dSyncer;
 
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
-		dSyncer = new DiskSyncer(log, waitTime);
+		dSyncer = new MasterSyncer(log, waitTime);
 
 		// Borramos las BBDD de Test
 
@@ -139,7 +139,7 @@ class DiskSyncerTest {
 		//Reopen databases
 		
 		System.out.println("Reopen Databases");
-		dSyncer = new DiskSyncer(log, waitTime);
+		dSyncer = new MasterSyncer(log, waitTime);
 		db1 = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dSyncer);
 		String[] s = db1.open();
 		Assertions.assertTrue(s[0].equals("OK"));

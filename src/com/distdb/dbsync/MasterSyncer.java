@@ -13,27 +13,40 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.DBObject;
-import com.distdb.dbsync.DiskSyncer.LoggedOps;
+import com.distdb.dbserver.Node;
+import com.distdb.dbsync.MasterSyncer.LoggedOps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
-public class DiskSyncer implements Runnable {
+public class MasterSyncer implements Runnable {
 
 	public Map<String, List<LoggedOps>> dbQueue;
 	public Map<String, String> dataPaths;
 	public int waitTime;
+	private Cluster cluster;
 	private Logger log;
+	private boolean delayLogs = true;
 	private boolean keepRunning;
 
-	public DiskSyncer(Logger log, int waitTime) {
+	public MasterSyncer(Logger log, Cluster cluster, int syncDiskTime, int syncNetTime) {
 		this.log = log;
+		this.cluster = cluster;
 		dbQueue = new HashMap<>();
 		dataPaths = new HashMap<>();
-		this.waitTime = waitTime;
+		this.waitTime = syncDiskTime;
+		if (syncDiskTime == 0) {
+			this.delayLogs = false; 
+			this.waitTime = syncNetTime;
+		} else {
+			if (syncDiskTime <= syncNetTime)
+				this.waitTime = syncNetTime;
+		}
+		
 		this.keepRunning = true;
 	}
 
@@ -56,7 +69,8 @@ public class DiskSyncer implements Runnable {
 		log.log(Level.INFO, "Starting the disk syncer daemon");
 		log.log(Level.INFO, "Syncing to disk every " + waitTime/1000 + " seconds");
 		while (keepRunning) {
-			forceLog();
+			diskLog();
+			netSync();
 			try {
 				Thread.sleep(waitTime);
 			} catch (InterruptedException e) {
@@ -98,7 +112,7 @@ public class DiskSyncer implements Runnable {
 
 	}
 
-	public void forceLog() {
+	public void diskLog() {
 		for (String s : dbQueue.keySet()) {
 			if (dbQueue.get(s).isEmpty())
 				continue;
@@ -111,6 +125,18 @@ public class DiskSyncer implements Runnable {
 				dbQueue.get(s).clear(); // Se vacia la pila de log correspondiente a la BBDD
 			}
 			log.log(Level.INFO, "Logged  operations for Database " + s);
+		}
+	}
+	
+	public void netSync() {
+		if (cluster.aliveReplicas.size() == 0)
+			return;
+		for (String s : dbQueue.keySet()) {
+			if (dbQueue.get(s).isEmpty())
+				continue;
+			for (Node n: cluster.aliveReplicas) {
+				netSyncNode(n, dbQueue.get(s));
+			}
 		}
 	}
 
@@ -147,6 +173,11 @@ public class DiskSyncer implements Runnable {
 		}
 		return ret;
 	}
+	
+	private void netSyncNode(Node n, List<LoggedOps>ops) {
+		
+	}
+
 
 	public class LoggedOps {
 		public long timeStamp;

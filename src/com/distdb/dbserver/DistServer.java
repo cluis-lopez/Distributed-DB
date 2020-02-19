@@ -3,11 +3,8 @@ package com.distdb.dbserver;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -19,8 +16,8 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 import com.distdb.HTTPDataserver.DataServerAPI;
-import com.distdb.dbsync.DiskSyncer;
-import com.distdb.dbsync.MasterSyncerServer;
+import com.distdb.dbsync.MasterSyncer;
+import com.distdb.dbsync.ClusterHTTPServer;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -40,13 +37,12 @@ public class DistServer {
 	public void kill() {
 		DistServer.keepRunning = false;
 	}
-	
+
 	public static void main(String[] args) {
 		new DistServer();
 	}
 
-
-	public DistServer () {
+	public DistServer() {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$tT %4$s %5$s%6$s%n");
 		FileHandler fd = null;
 
@@ -64,7 +60,7 @@ public class DistServer {
 		fd.close();
 
 		// Initialize Properties
-		
+
 		String propsFile = System.getProperty("ConfigFile");
 		if (propsFile == null || propsFile.equals("")) {
 			propsFile = "etc/config/DistDB.json";
@@ -78,41 +74,53 @@ public class DistServer {
 			log.log(Level.SEVERE, "Cannot open or access configuration file ... exiting");
 			log.log(Level.SEVERE, e.getMessage());
 			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+			return;
 		}
 
-		// Initialize cluster nodes
-		
-		nodes = new EnumMap<>(DBType.class);
-		nodes.put(DBType.MASTER, new ArrayList<>());
-		nodes.put(DBType.REPLICA, new ArrayList<>());
-		for (Map<String, String>m: props.nodes) {
-			try {
-				DBType type;
-				if (m.get("nodeType").equals("Master") || m.get("nodeType").equals("MASTER"))
-					type = DBType.MASTER;
-				else
-					type = DBType.REPLICA;
-				URL url = new URL(m.get("url"));
-				Node node = new Node (m.get("name"), url, type);
-				nodes.get(type).add(node);
-			} catch (MalformedURLException e) {
-				System.err.println("Nodo mal especificado (URL??)");
-				log.log(Level.WARNING, "Incorrect node specification. Check URL for node" + m.get("name"));
-			}
+		// Initialize cluster
+
+		DBType type;
+		if (props.ThisNode.equals("Master") || props.ThisNode.equals("MASTER"))
+			type = DBType.MASTER;
+		else
+			type = DBType.REPLICA;
+
+		Cluster cluster = new Cluster(log, props.nodes, type);
+
+		if (!cluster.setMaster()) {
+			System.err.println("Cannot set cluster Master. Exiting...");
+			log.log(Level.SEVERE, "Cannot set cluster Master. Exiting.");
+			return;
 		}
 		
-		//Initialize Databases
-		DBType serverType;
-		DiskSyncer dsync = null;
-		MasterSyncerServer masterSyncerServer = null;
+		String[] temp = cluster.setReplicas();
+		if (temp[0].equals("FAIL")) {
+			System.err.println("Failing setup cluster "+ temp[1]);
+			return;
+		}
 		
-		if (props.ThisNode.equals("Master") || props.ThisNode.equals("MASTER")) {
-			serverType = DBType.MASTER;
-			dsync = new DiskSyncer(log, 1000 * props.syncTime);
-			masterSyncerServer = new MasterSyncerServer(props.clusterPort, nodes);
-		} else
-			serverType = DBType.REPLICA;
+		System.err.println("This node acts as "+ type);
+		if (type == DBType.MASTER) {
+			System.err.println(temp[1]);
+			if (cluster.aliveReplicas.size()>0) {
+				System.err.println("Replicas living a this time:");
+				for (Node n: cluster.aliveReplicas)
+					System.err.println(n.name);
+			}		
+		}
+			
 
+		// Initialize Databases
+		MasterSyncer dsync = null;
+		ClusterHTTPServer clusterHTTPserver = null;
+
+		if (type == DBType.MASTER) {
+			dsync = new MasterSyncer(log, cluster, 1000 * props.syncDiskTime, 1000 * props.syncNetTime);
+			clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster);
+		} else {
+			//TODO
+		}
+		
 		dbs = new HashMap<>();
 
 		for (Map<String, String> m : props.databases) {
@@ -122,17 +130,17 @@ public class DistServer {
 				dbs.get(m.get("name")).open();
 		}
 
-		// Start Disk Sync Server
-		
+		// Start Sync Server
+
 		Thread dSync = new Thread(dsync);
-		dSync.setName("Disk Syncer");
+		dSync.setName("Master Syncer");
 		dSync.start();
-		
-		// Start the net syncer server
-		
-		Thread netSync = new Thread(masterSyncerServer);
-		netSync.setName("Net Syncer");
-		
+
+		// Start the cluster server
+
+		Thread clusterServer = new Thread(clusterHTTPserver);
+		clusterServer.setName("Net Syncer");
+
 		// Start the Data Server
 
 		ServerSocket server = null;
@@ -145,6 +153,7 @@ public class DistServer {
 			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 			System.err.println("No se puede arrancar el server en el puerto " + props.dataPort);
 			e.printStackTrace();
+			return;
 		}
 
 		System.out.println("Arrancando el servidor");
@@ -162,7 +171,8 @@ public class DistServer {
 			final DataServerAPI request = new DataServerAPI(log, client, props.adminRootPath, dbs, dsync);
 			Thread thread = new Thread(request);
 			thread.setName("Request Dispatcher #" + thread.getId());
-			thread.start();;
+			thread.start();
+			;
 		}
 	}
 
@@ -170,7 +180,8 @@ public class DistServer {
 		String ThisNode;
 		int dataPort;
 		int clusterPort;
-		int syncTime;
+		int syncDiskTime;
+		int syncNetTime;
 		String adminRootPath;
 		List<Map<String, String>> nodes;
 		List<Map<String, String>> databases;
