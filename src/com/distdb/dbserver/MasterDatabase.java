@@ -204,6 +204,14 @@ public class MasterDatabase extends Database {
 		}
 		return ret;
 	}
+	
+	@Override
+	public String[] getMasterInfo() {
+		String[] ret = new String[2];
+		ret[0] = dataPath;
+		ret[1] = String.valueOf(dSyncer.waitTime);
+		return ret;
+	}
 
 	private String[] loadObjects(String dataFile, Class<?> cl, DBObject dbo) {
 		String[] ret = new String[3];

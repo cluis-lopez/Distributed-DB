@@ -7,6 +7,7 @@ import java.net.URL;
 import java.util.Date;
 import java.util.Scanner;
 
+import com.distdb.HttpHelpers.HelperJson;
 import com.distdb.dbserver.DistServer.DBType;
 
 /**
@@ -59,7 +60,7 @@ public class Node {
 			InputStream response = url2.openStream();
 			Scanner scanner = new Scanner(response);
 			String responseBody = scanner.useDelimiter("\\A").next();
-			if (responseBody.equals("OK"))
+			if (HelperJson.decodeCodes(responseBody)[0].equals("OK"))
 				ret = true;
 			scanner.close();
 			response.close();

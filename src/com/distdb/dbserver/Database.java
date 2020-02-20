@@ -55,6 +55,7 @@ public abstract class Database {
 	public abstract String[] sync();
 	public abstract String[] insert(String objectName, Object object, boolean logging);
 	public abstract String[] remove(String objectName, String id, boolean logging);
+	public abstract String[] getMasterInfo();
 	
 	public String[] insert(String objectName, Object o) {
 		return insert(objectName, o, true);

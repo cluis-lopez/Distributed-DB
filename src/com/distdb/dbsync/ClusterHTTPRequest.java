@@ -160,6 +160,9 @@ public class ClusterHTTPRequest implements Runnable {
 					return ret;
 				}
 				//Send the collection of the requested object
+				
+				String dataFile = dbs.get(dbName).getMasterInfo()[0] + "/_data_" + objectName;
+				String loggingFile = dbs.get(dbName).getMasterInfo()[0] + "/_logging_" + dbName;
 			}
 		} else {
 			ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json command", "");

@@ -77,8 +77,7 @@ public class ReplicaDatabase extends Database {
 	}
 
 	@Override
-	public String getInfo() {
-		// TODO Auto-generated method stub
+	public  String[] getMasterInfo() {
 		return null;
 	}
 	
