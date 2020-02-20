@@ -138,7 +138,7 @@ public class MasterDatabase extends Database {
 				log.log(Level.INFO, "Properly removed logging file for database " + dbname);
 			}
 			props.isProperlyShutdown = true;
-			props.lastProperlyShtdown = new Date();
+			props.lastProperlyShutdown = new Date();
 			updateProps();
 			ret[1] = "Database closed";
 		}

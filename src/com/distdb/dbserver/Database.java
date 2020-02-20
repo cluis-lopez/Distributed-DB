@@ -4,11 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +12,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
@@ -116,7 +111,7 @@ public abstract class Database {
 		JsonObject jo = new JsonObject();
 		jo.addProperty("Name", dbname);
 		//jo.addProperty("Config File", dataPath);
-		jo.addProperty("DB Last properly shutdown",  new GsonBuilder().setDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz").create().toJson(props.lastProperlyShtdown));
+		jo.addProperty("DB Last properly shutdown",  new GsonBuilder().setDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz").create().toJson(props.lastProperlyShutdown));
 		for (String s : dbobjs.keySet()) {
 			jo.addProperty(s, dbobjs.get(s).size());
 		}
@@ -138,7 +133,7 @@ public abstract class Database {
 	protected class Properties {
 		String dataPath;
 		boolean isProperlyShutdown;
-		Date lastProperlyShtdown;
+		Date lastProperlyShutdown;
 		boolean isAvailable;
 		boolean isReadOnly;
 

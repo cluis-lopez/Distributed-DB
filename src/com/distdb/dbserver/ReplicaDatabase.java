@@ -4,28 +4,20 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public class ReplicaDatabase extends Database {
 
-	public String dbname;
-	public String defPath;
-	private Logger log;
-	private String propsFile;
-	private Properties props;
-
-	public Map<String, DBObject> dbobjs;
+	private URL myMaster;
 	
 	public ReplicaDatabase(Logger log, String dbname, String config, String defPath, URL myMaster) {
 		super(log, dbname, config, defPath);
+		this.myMaster = myMaster;
 	}
 	
 	
