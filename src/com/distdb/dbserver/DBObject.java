@@ -1,32 +1,13 @@
 package com.distdb.dbserver;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.dbserver.DistServer.DBType;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 public class DBObject {
@@ -37,7 +18,6 @@ public class DBObject {
 	java.lang.reflect.Type dataType;
 
 	public DBObject( Class<?> cl, Logger log) {
-
 		this.cl = cl;
 		this.log = log;
 		dataType = TypeToken.getParameterized(HashMap.class, String.class, cl).getType();

@@ -57,7 +57,16 @@ public class MasterSyncer implements Runnable {
 	}
 
 	public void enQueue(String operation, String database, String objectName, String id, Object o) {
-		dbQueue.get(database).add(new LoggedOps(operation, objectName, id, o));
+		if (delayLogs) //Logs are maintained in-mem until the dis waitTime expires and then are recorded to a logging file
+			dbQueue.get(database).add(new LoggedOps(operation, objectName, id, o));
+		else {
+			// We should add the new operation to the logging file immediately
+			String loggingFile = dataPaths.get(database) + "/" + database + "_logging";
+			LoggedOps op = new LoggedOps(operation, objectName, id, o);
+			List<LoggedOps> l = new ArrayList<>();
+			l.add(op);
+			appendJson(loggingFile, l);
+		}
 	}
 
 	public void kill() {
@@ -108,17 +117,16 @@ public class MasterSyncer implements Runnable {
 		return ret;
 	}
 
-	private void rebuildDatabaseOnDisk(String dbname) {
-
-	}
-
 	public void diskLog() {
+		if (! delayLogs) // All logs saved to disk in logging file. No need to update
+			return;
+		
 		for (String s : dbQueue.keySet()) {
 			if (dbQueue.get(s).isEmpty())
 				continue;
 			log.log(Level.INFO, "Logging " + dbQueue.get(s).size() + "  delayed operations for Database " + s);
-			String dataFile = dataPaths.get(s) + "/" + s + "_logging";
-			if (!appendJson(dataFile, dbQueue.get(s))) {
+			String logginFile = dataPaths.get(s) + "/" + s + "_logging";
+			if (!appendJson(logginFile, dbQueue.get(s))) {
 				log.log(Level.WARNING, "Cannot update log file");
 				System.err.println("No se puede actualizar el fichero de log para la base de datos " + s);
 			} else {
@@ -128,16 +136,20 @@ public class MasterSyncer implements Runnable {
 		}
 	}
 	
-	public void netSync() {
-		if (cluster.aliveReplicas.size() == 0)
+	private void netSync() {
+		if (cluster.liveReplicas.size() == 0)
 			return;
 		for (String s : dbQueue.keySet()) {
 			if (dbQueue.get(s).isEmpty())
 				continue;
-			for (Node n: cluster.aliveReplicas) {
-				netSyncNode(n, dbQueue.get(s));
+			for (Node n: cluster.liveReplicas) {
+				updateNode(s, n, dbQueue.get(s));
 			}
 		}
+	}
+	
+	private void updateNode(String dbName, Node n, List<LoggedOps> ops) {
+		
 	}
 
 	private boolean isEmpty() {
@@ -148,12 +160,12 @@ public class MasterSyncer implements Runnable {
 		return ret;
 	}
 
-	private boolean appendJson(String dataFile, List<LoggedOps> objectToAppend) {
+	private boolean appendJson(String loggingFile, List<LoggedOps> objectToAppend) {
 		boolean ret = false;
 		Gson jsonWrite = new GsonBuilder().setPrettyPrinting().create();
 		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
 		dataType =  new TypeToken<List<LoggedOps>>() {}.getType();
-		File f = new File(dataFile);
+		File f = new File(loggingFile);
 		String temp = jsonWrite.toJson(objectToAppend, dataType);
 		try {
 			if (f.exists()) {
@@ -169,15 +181,10 @@ public class MasterSyncer implements Runnable {
 			ret = true;
 		} catch (IOException e) {
 			System.err.println("Problemas al escribir el log");
-			log.log(Level.WARNING, "Problems when updating or creating database log at " + dataFile);
+			log.log(Level.WARNING, "Problems when updating or creating database log at " + loggingFile);
 		}
 		return ret;
 	}
-	
-	private void netSyncNode(Node n, List<LoggedOps>ops) {
-		
-	}
-
 
 	public class LoggedOps {
 		public long timeStamp;

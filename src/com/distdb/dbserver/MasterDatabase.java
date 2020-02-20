@@ -167,8 +167,7 @@ public class MasterDatabase extends Database {
 
 		try {
 			o = object;
-			System.out.println(objectName + " : " + cl.getSimpleName());
-			Class spcl = cl.getSuperclass();
+			Class<?> spcl = cl.getSuperclass();
 			f = spcl.getDeclaredField("id");
 			id = (String) f.get(o);
 			f = spcl.getDeclaredField("onDisk");

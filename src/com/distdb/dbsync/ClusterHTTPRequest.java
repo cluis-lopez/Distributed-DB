@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -106,13 +108,13 @@ public class ClusterHTTPRequest implements Runnable {
 	public String processPost(HeaderDecoder reqLine, String body) {
 		String[] ret = new String[2];
 		String resp = "";
-		
+
 		String[] res = reqLine.resource.split("/"); // First element should be DataBase name, Second must be the command
-		if (res == null || res.length <2 || res.length>3) {
+		if (res == null || res.length < 2 || res.length > 3) {
 			resp = "HTTP/1.1 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
-		} else  if(res[1].equals("ping")) {
+		} else if (res[1].equals("ping")) {
 			ret = answerPing(body);
-		} else if (res.length  == 3) {
+		} else if (res.length == 3) {
 			String dbname = res[1];
 			String operation = ret[2];
 		}
@@ -120,7 +122,7 @@ public class ClusterHTTPRequest implements Runnable {
 				+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 		return resp;
 	}
-	
+
 	private String[] answerPing(String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
@@ -137,8 +139,8 @@ public class ClusterHTTPRequest implements Runnable {
 		}
 		return ret;
 	}
-	
-	private String[] sendObjects(String dbName, String body) {
+
+	private String[] sendObjectFile(String dbName, String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		JsonElement je = new JsonParser().parse(body);
@@ -150,7 +152,7 @@ public class ClusterHTTPRequest implements Runnable {
 			JsonObject jo = je.getAsJsonObject();
 			String user = jo.get("user").getAsString();
 			String token = jo.get("token").getAsString();
-			if (true) { // Reserved for authentication
+			if (user == jo.get("user").getAsString()) { // True Reserved for authentication
 				String objectName = jo.get("objectName").getAsString();
 				DBObject dbo = null;
 				if (dbs.get(dbName) != null)
@@ -159,10 +161,58 @@ public class ClusterHTTPRequest implements Runnable {
 					ret[1] = HelperJson.returnCodes("FAIL", "Invalid database name or object collection name", "");
 					return ret;
 				}
-				//Send the collection of the requested object
-				
+				// Send the collection of the requested object
+
 				String dataFile = dbs.get(dbName).getMasterInfo()[0] + "/_data_" + objectName;
-				String loggingFile = dbs.get(dbName).getMasterInfo()[0] + "/_logging_" + dbName;
+				String content = "";
+				try {
+					content = new String(Files.readAllBytes(Paths.get(dataFile)));
+					ret[1] = HelperJson.returnCodes("OK", objectName + "datafile sent", content);
+				} catch (IOException e) {
+					log.log(Level.SEVERE, "cannot read & send log file for " + dbName);
+					log.log(Level.SEVERE, e.getMessage());
+					log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+					ret[1] = HelperJson.returnCodes("FAIL", "No file", content);
+				}
+			} else {
+				ret[1] = HelperJson.returnCodes("FAIL", "Not Authorized", "");
+			}
+		} else {
+			ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json command", "");
+		}
+		return ret;
+	}
+
+	private String[] sendLoggingFile(String dbName, String body) {
+		String[] ret = new String[2];
+		ret[0] = "application/json";
+		JsonElement je = new JsonParser().parse(body);
+		if (cluster.myType == DBType.REPLICA) {
+			ret[1] = HelperJson.returnCodes("FAIL", "Replicas cannot send object collections", "");
+			return ret;
+		}
+		if (je.isJsonObject()) {
+			JsonObject jo = je.getAsJsonObject();
+			String user = jo.get("user").getAsString();
+			String token = jo.get("token").getAsString();
+			if (user == jo.get("user").getAsString()) { // True by now. Reserved for authentication
+
+				// Send the Logging file for the requested database
+
+				String loggingFile = dbs.get(dbName).getMasterInfo()[0] + dbName + "_logging";
+				String content = "";
+				try {
+					content = new String(Files.readAllBytes(Paths.get(loggingFile)));
+					ret[1] = HelperJson.returnCodes("OK", dbName + " Log file sent", content);
+				} catch (IOException e) {
+					log.log(Level.SEVERE, "cannot read & send log file for " + dbName);
+					log.log(Level.SEVERE, e.getMessage());
+					log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+					ret[1] = HelperJson.returnCodes("FAIL", "No file", "");
+				}
+			}
+			else {
+				ret[1] = HelperJson.returnCodes("FAIL", "Nor Authorized", "");
 			}
 		} else {
 			ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json command", "");

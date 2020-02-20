@@ -102,9 +102,9 @@ public class DistServer {
 		System.err.println("This node acts as "+ type);
 		if (type == DBType.MASTER) {
 			System.err.println(temp[1]);
-			if (cluster.aliveReplicas.size()>0) {
+			if (cluster.liveReplicas.size()>0) {
 				System.err.println("Replicas living a this time:");
-				for (Node n: cluster.aliveReplicas)
+				for (Node n: cluster.liveReplicas)
 					System.err.println(n.name);
 			}		
 		}

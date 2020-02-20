@@ -14,7 +14,7 @@ import com.distdb.dbserver.DistServer.DBType;
 public class Cluster {
 	public URL myURL;
 	public EnumMap<DBType, List<Node>> declaredNodes;
-	public List<Node> aliveReplicas;
+	public List<Node> liveReplicas;
 	public Node myMaster;
 	public DBType myType;
 	
@@ -23,7 +23,7 @@ public class Cluster {
 		declaredNodes.put(DBType.MASTER, new ArrayList<>());
 		declaredNodes.put(DBType.REPLICA, new ArrayList<>());
 		
-		aliveReplicas = new ArrayList<>();
+		liveReplicas = new ArrayList<>();
 		this.myType = type;
 		
 		for (Map<String, String> m:  props) {
@@ -77,10 +77,10 @@ public class Cluster {
 		String[] temp = new String[2];
 		for (Node n: declaredNodes.get(DBType.REPLICA) ) {
 			if (n.fullCheck()[0].equals("OK")) {
-				aliveReplicas.add(n);
+				liveReplicas.add(n);
 			}
 		}
-		if (aliveReplicas.size() == 0)
+		if (liveReplicas.size() == 0)
 			ret[1] ="No replicas to serve at this time. I'm a standalone Master";
 		return ret;
 	}
