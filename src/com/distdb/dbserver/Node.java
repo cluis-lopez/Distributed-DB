@@ -60,10 +60,10 @@ public class Node {
 			InputStream response = url2.openStream();
 			Scanner scanner = new Scanner(response);
 			String responseBody = scanner.useDelimiter("\\A").next();
-			if (HelperJson.decodeCodes(responseBody)[0].equals("OK"))
-				ret = true;
 			scanner.close();
 			response.close();
+			if (HelperJson.decodeCodes(responseBody)[0].equals("OK"))
+				ret = true;
 		} catch (IOException e) {
 			ret = false;
 		}

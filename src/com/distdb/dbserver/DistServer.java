@@ -92,49 +92,60 @@ public class DistServer {
 			log.log(Level.SEVERE, "Cannot set cluster Master. Exiting.");
 			return;
 		}
-		
+
 		String[] temp = cluster.setReplicas();
 		if (temp[0].equals("FAIL")) {
-			System.err.println("Failing setup cluster "+ temp[1]);
+			System.err.println("Failing setup cluster " + temp[1]);
 			return;
 		}
-		
-		System.err.println("This node acts as "+ type);
+
+		System.err.println("This node acts as " + type);
 		if (type == DBType.MASTER) {
 			System.err.println(temp[1]);
-			if (cluster.liveReplicas.size()>0) {
+			if (cluster.liveReplicas.size() > 0) {
 				System.err.println("Replicas living a this time:");
-				for (Node n: cluster.liveReplicas)
+				for (Node n : cluster.liveReplicas)
 					System.err.println(n.name);
-			}		
+			}
 		}
-			
+		
+		// If I'm a replica. Joins the cluster
+		
+		if (type == DBType.REPLICA)
+			cluster.joinMeToCluster();
 
 		// Initialize Databases
 		MasterSyncer dsync = null;
 		ClusterHTTPServer clusterHTTPserver = null;
 
-		if (type == DBType.MASTER) {
+		if (type == DBType.MASTER)
 			dsync = new MasterSyncer(log, cluster, 1000 * props.syncDiskTime, 1000 * props.syncNetTime);
-			clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster, dbs);
-		} else {
-			//TODO
-		}
-		
+
+		// Start the cluster HTTP Server
+		clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster, dbs);
+
 		dbs = new HashMap<>();
 
 		for (Map<String, String> m : props.databases) {
 			System.err.println("Inicializando Database: " + m.get("name"));
-			dbs.put(m.get("name"), new MasterDatabase(log, m.get("name"), m.get("defFile"), m.get("defPath"), dsync));
+			if (type == DBType.MASTER) {
+				dbs.put(m.get("name"),
+						new MasterDatabase(log, m.get("name"), m.get("defFile"), m.get("defPath"), dsync));
+			} else {
+				dbs.put(m.get("name"), new ReplicaDatabase(log, m.get("name"), m.get("defFile"), m.get("defPath"),
+						cluster.myMaster.url));
+			}
 			if (m.get("autoStart") != null && (m.get("autoStart").equals("y") || m.get("autoStart").equals("Y")))
 				dbs.get(m.get("name")).open();
 		}
 
 		// Start Sync Server
 
-		Thread dSync = new Thread(dsync);
-		dSync.setName("Master Syncer");
-		dSync.start();
+		if (type == DBType.MASTER && dsync != null) {
+			Thread dSync = new Thread(dsync);
+			dSync.setName("Master Syncer");
+			dSync.start();
+		}
 
 		// Start the cluster server
 

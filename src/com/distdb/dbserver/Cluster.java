@@ -55,10 +55,12 @@ public class Cluster {
 			System.err.println("Only single Master is supported at this release");
 			return false; // Single Master supported at first release
 		}
+		
 		this.myMaster = declaredNodes.get(DBType.MASTER).get(0);
 		
-		if ( myType == DBType.MASTER)
+		if ( myType == DBType.MASTER) {
 			return true; //Soy el Master, nada que hacer
+		}
 		else if (myMaster.fullCheck()[0].equals("OK")) { //Soy una réplica chequeo si el Master está operativo. Si no hay master operativo no puedo trabajar
 				return true;
 		}
@@ -83,5 +85,16 @@ public class Cluster {
 		if (liveReplicas.size() == 0)
 			ret[1] ="No replicas to serve at this time. I'm a standalone Master";
 		return ret;
+	}
+	
+	public String[] replicaJoinsCluster(String replicaname) {
+		String[] ret = new String[2];
+		ret[0] = "FAIL"; ret[1] = "";
+		if (myType == DBType.REPLICA) {
+			ret[1] = "Invalid opertion. A Replica wants to join me while I'm a replica";
+			return ret;
+		}
+		
+			
 	}
 }

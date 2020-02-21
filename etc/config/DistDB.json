@@ -2,7 +2,7 @@
     "ThisNode": "Master",
     "dataPort": 8080,
     "clusterPort": 8081,
-    "syncDIskTime": 30,
+    "syncDiskTime": 30,
     "syncNetTime": 30,
     "adminRootPath": "etc/root",
     

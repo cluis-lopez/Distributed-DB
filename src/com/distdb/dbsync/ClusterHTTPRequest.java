@@ -114,14 +114,16 @@ public class ClusterHTTPRequest implements Runnable {
 			resp = "HTTP/1.1 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
 		} else if (res[1].equals("ping")) {
 			ret = answerPing(body);
+		} else if (res[1].equals("joinCluster")) {
+			ret = joinCluster(body);
 		} else if (res.length == 3) {
 			String dbname = res[1];
 			String operation = res[2];
-			if (operation.equals("getObjectFile"))
+			if (operation.equals("getObjectFile")) // From Replica: Master must send datafile
 				ret = sendObjectFile(dbname, body);
-			if (operation.equals("getLoggingFile"))
+			if (operation.equals("getLoggingFile")) // From Replica: Master must send logfile
 				ret = sendLoggingFile(dbname, body);
-			if (operation.equals("sendUpdate"));
+			if (operation.equals("sendUpdate")); // From Master. Replica must accept logging operations
 				ret = getUpdate(dbname, body);
 			
 			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
@@ -149,6 +151,28 @@ public class ClusterHTTPRequest implements Runnable {
 		return ret;
 	}
 
+	private String[] joinCluster(String body) {
+		String[] ret = new String[2];
+		ret[0] = "application/json";
+		
+		if (cluster.myType == DBType.REPLICA) {
+			ret[1] = HelperJson.returnCodes("FAIL", "I'm a replica. Another replica tries to join me", "");
+			return ret;
+		}
+		
+		JsonElement je = new JsonParser().parse(body);
+		if (je.isJsonObject()) {
+			JsonObject jo = je.getAsJsonObject();
+			String user = jo.get("user").getAsString();
+			String token = jo.get("token").getAsString();
+			if (user.equals(jo.get("user").getAsString())) { // True Reserved for authentication
+				
+			}
+		}
+		return ret;
+	}
+		
+		
 	private String[] sendObjectFile(String dbName, String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
