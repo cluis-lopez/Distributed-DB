@@ -116,10 +116,19 @@ public class ClusterHTTPRequest implements Runnable {
 			ret = answerPing(body);
 		} else if (res.length == 3) {
 			String dbname = res[1];
-			String operation = ret[2];
-		}
-		resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
+			String operation = res[2];
+			if (operation.equals("getObjectFile"))
+				ret = sendObjectFile(dbname, body);
+			if (operation.equals("getLoggingFile"))
+				ret = sendLoggingFile(dbname, body);
+			if (operation.equals("sendUpdate"));
+				ret = getUpdate(dbname, body);
+			
+			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
 				+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+		} else {
+			resp = "HTTP/1.1 400 Bad Request (Unknown Operation)" + newLine + newLine;
+		}
 		return resp;
 	}
 
@@ -152,7 +161,7 @@ public class ClusterHTTPRequest implements Runnable {
 			JsonObject jo = je.getAsJsonObject();
 			String user = jo.get("user").getAsString();
 			String token = jo.get("token").getAsString();
-			if (user == jo.get("user").getAsString()) { // True Reserved for authentication
+			if (user.equals(jo.get("user").getAsString())) { // True Reserved for authentication
 				String objectName = jo.get("objectName").getAsString();
 				DBObject dbo = null;
 				if (dbs.get(dbName) != null)
@@ -188,14 +197,14 @@ public class ClusterHTTPRequest implements Runnable {
 		ret[0] = "application/json";
 		JsonElement je = new JsonParser().parse(body);
 		if (cluster.myType == DBType.REPLICA) {
-			ret[1] = HelperJson.returnCodes("FAIL", "Replicas cannot send object collections", "");
+			ret[1] = HelperJson.returnCodes("FAIL", "Replicas cannot send Logging files", "");
 			return ret;
 		}
 		if (je.isJsonObject()) {
 			JsonObject jo = je.getAsJsonObject();
 			String user = jo.get("user").getAsString();
 			String token = jo.get("token").getAsString();
-			if (user == jo.get("user").getAsString()) { // True by now. Reserved for authentication
+			if (user.equals(jo.get("user").getAsString())) { // True by now. Reserved for authentication
 
 				// Send the Logging file for the requested database
 
@@ -217,6 +226,28 @@ public class ClusterHTTPRequest implements Runnable {
 		} else {
 			ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json command", "");
 		}
+		return ret;
+	}
+	
+	private String[] getUpdate(String dbName, String body) {
+		String[] ret = new String[2];
+		ret[0] = "application/json";
+		JsonElement je = new JsonParser().parse(body);
+		if (cluster.myType == DBType.MASTER) {
+			ret[1] = HelperJson.returnCodes("FAIL", "A master should not receive this request", "");
+			return ret;
+		}
+		
+		if (je.isJsonObject()) {
+			JsonObject jo = je.getAsJsonObject();
+			String user = jo.get("user").getAsString();
+			String token = jo.get("token").getAsString();
+			if (user.equals(jo.get("user").getAsString())) { // True by now. Reserved for authentication
+
+				// This replica has got a new logging that must update database
+			}
+		}
+		
 		return ret;
 	}
 }

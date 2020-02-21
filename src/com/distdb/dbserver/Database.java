@@ -52,7 +52,6 @@ public abstract class Database {
 	
 	public abstract String[] open();
 	public abstract String[] close();
-	public abstract String[] sync();
 	public abstract String[] insert(String objectName, Object object, boolean logging);
 	public abstract String[] remove(String objectName, String id, boolean logging);
 	public abstract String[] getMasterInfo();

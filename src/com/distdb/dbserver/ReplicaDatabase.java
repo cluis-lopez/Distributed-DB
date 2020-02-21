@@ -1,12 +1,11 @@
 package com.distdb.dbserver;
 
-import java.io.FileReader;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,13 +24,11 @@ import com.google.gson.reflect.TypeToken;
 public class ReplicaDatabase extends Database {
 
 	private URL myMaster;
-	
+
 	public ReplicaDatabase(Logger log, String dbname, String config, String defPath, URL myMaster) {
 		super(log, dbname, config, defPath);
 		this.myMaster = myMaster;
 	}
-	
-	
 
 	@Override
 	public String[] open() {
@@ -49,13 +46,14 @@ public class ReplicaDatabase extends Database {
 			} catch (ClassNotFoundException e) {
 				log.log(Level.SEVERE, "Cannot instantiate object collection for objects : " + s);
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
-				ret[0]="FAIL"; ret[1]="Cannot instantiate objects;";
+				ret[0] = "FAIL";
+				ret[1] = "Cannot instantiate objects;";
 				return ret;
 			}
 		}
-		
-		//Now asks for the Logging file and apply ops
-		
+
+		// Now asks for the Logging file and apply ops
+
 		boolean result = true;
 		try {
 			String fr = askForLogging();
@@ -85,30 +83,21 @@ public class ReplicaDatabase extends Database {
 
 	@Override
 	public String[] close() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+		String[] ret = new String[3];
+		ret[0] = "OK";ret[1] = "Database closed";
 
-	@Override
-	public String[] sync() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String[] insert(String objectName, Object o) {
-		// TODO Auto-generated method stub
-		return null;
+		for (DBObject o : dbobjs.values())
+			o.close();
+		dbobjs = null;
+		
+		System.err.println("Cerrando la base de datos replica " + dbname);
+		log.log(Level.INFO, "Closing replica database: " + dbname);
+		
+		return ret;
 	}
 
 	@Override
 	public String[] insert(String objectName, Object object, boolean logging) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String[] remove(String objectName, String id) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -120,47 +109,37 @@ public class ReplicaDatabase extends Database {
 	}
 
 	@Override
-	public String[] getById(String objectName, String id) {
-		// TODO Auto-generated method stub
-		return null;
+	public String[] getMasterInfo() {
+		String[] ret = new String[2];
+		ret[0] = "FAIL"; ret[1] = "Replica Database";
+		return ret;
 	}
 
-	@Override
-	public String[] searchByField(String objectName, String fieldName, String value) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public  String[] getMasterInfo() {
-		return null;
-	}
-	
-	private void askForObject(URL myMaster, Class cl, DBObject dbo) {
+	private void askForObject(URL myMaster, Class<?> cl, DBObject dbo) {
 		JsonObject jo = new JsonObject();
 		jo.addProperty("user", "");
 		jo.addProperty("token", "");
 		jo.addProperty("objectName", cl.getSimpleName());
 		String retCodes = HTTPDataMovers.postData(log, myMaster, dbname, "getObjectFile", jo.toString());
 		String[] codes = HelperJson.decodeCodes(retCodes);
-		if (codes[0].equals("OK")){
+		if (codes[0].equals("OK")) {
 			java.lang.reflect.Type dataType = TypeToken.getParameterized(HashMap.class, String.class, cl).getType();
 			dbo.obj = new Gson().fromJson(codes[3], dataType);
 		}
 	}
-	
+
 	private String askForLogging() {
 		JsonObject jo = new JsonObject();
 		jo.addProperty("user", "");
 		jo.addProperty("token", "");
 		String retCodes = HTTPDataMovers.postData(log, myMaster, dbname, "getLoggingFile", jo.toString());
 		String[] codes = HelperJson.decodeCodes(retCodes);
-		if (codes[0].equals("OK")){
+		if (codes[0].equals("OK")) {
 			return codes[3];
 		}
 		return "";
 	}
-	
+
 	protected void updateProps() {
 		try {
 			FileWriter fw = new FileWriter(propsFile);
@@ -172,5 +151,5 @@ public class ReplicaDatabase extends Database {
 			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 		}
 	}
-	
+
 }

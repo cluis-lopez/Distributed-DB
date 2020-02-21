@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.distdb.HttpHelpers.HTTPDataMovers;
 import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.DBObject;
 import com.distdb.dbserver.Node;
@@ -57,7 +58,7 @@ public class MasterSyncer implements Runnable {
 	}
 
 	public void enQueue(String operation, String database, String objectName, String id, Object o) {
-		if (delayLogs) //Logs are maintained in-mem until the dis waitTime expires and then are recorded to a logging file
+		if (delayLogs) //Logs are maintained in-mem until disk waitTime expires and then, recorded to a logging file
 			dbQueue.get(database).add(new LoggedOps(operation, objectName, id, o));
 		else {
 			// We should add the new operation to the logging file immediately
@@ -149,7 +150,9 @@ public class MasterSyncer implements Runnable {
 	}
 	
 	private void updateNode(String dbName, Node n, List<LoggedOps> ops) {
-		
+		Gson json = new Gson();
+		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
+		HTTPDataMovers.postData(log, n.url, dbName, "sendUpdate", json.toJson(ops, dataType));
 	}
 
 	private boolean isEmpty() {

@@ -145,11 +145,6 @@ public class MasterDatabase extends Database {
 		return ret;
 	}
 
-	@Override
-	public String[] sync() {
-		String[] ret = new String[3];
-		return ret;
-	}
 
 	@Override
 	public String[] insert(String objectName, Object object, boolean logging) {
