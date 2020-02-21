@@ -4,15 +4,12 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.distdb.dbserver.Node;
 import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.Database;
-import com.distdb.dbserver.DistServer.DBType;
 
 public class ClusterHTTPServer implements Runnable {
 
@@ -41,9 +38,9 @@ public class ClusterHTTPServer implements Runnable {
 			e.printStackTrace();
 		}
 
-		System.out.println("Arrancando el cluster");
-		log.log(Level.INFO, "Cluster started");
-		log.log(Level.INFO, "Listening at port: " + clusterPort);
+		System.out.println("Arrancando el cluster HTTP Server en el puerto " + clusterPort);
+		//log.log(Level.INFO, "Cluster started");
+		//log.log(Level.INFO, "Listening at port: " + clusterPort);
 
 		Socket client = null;
 

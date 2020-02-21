@@ -19,7 +19,7 @@ public class Node {
 	public String name;
 	public URL url;
 	public DBType dbtype;
-	public boolean isAlive;
+	public boolean isLive;
 	public long lastReached;
 	public Date lastUpdated;
 
@@ -27,7 +27,7 @@ public class Node {
 		this.name = name;
 		this.url = url;
 		this.dbtype = dbtype;
-		this.isAlive = false;
+		this.isLive = false;
 	}
 
 	/**
@@ -39,16 +39,16 @@ public class Node {
 	public boolean isReachable() {
 		String hostname = url.getHost();
 		boolean ret = false;
-		;
 		try {
 			InetAddress ip = InetAddress.getByName(hostname);
 			if (ret = ip.isReachable(3000)) {
-				this.isAlive = true;
+				this.isLive = true;
 				this.lastReached = System.currentTimeMillis();
+				ret = true;
 			}
 		} catch (IOException e) {
 			ret = false;
-			this.isAlive = false;
+			this.isLive = false;
 		}
 		return ret;
 	}
@@ -78,7 +78,7 @@ public class Node {
 			System.err.println("Node not reachable");
 			return ret;
 		}
-		System.err.println("Checking if the node has DistServer cluster service running at ."+ this.url);
+		System.err.println("Checking if the node has DistServer cluster service running at "+ this.url);
 		if (! this.isAlive()) {
 			ret[0] = "FAIL"; ret[1] ="Node has not running cluster service at "+ this.url;
 			return ret;

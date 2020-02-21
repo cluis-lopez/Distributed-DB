@@ -152,7 +152,7 @@ public class MasterSyncer implements Runnable {
 	private void updateNode(String dbName, Node n, List<LoggedOps> ops) {
 		Gson json = new Gson();
 		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
-		HTTPDataMovers.postData(log, n.url, dbName, "sendUpdate", json.toJson(ops, dataType));
+		String ret = HTTPDataMovers.postData(log, n.url, dbName, "sendUpdate", json.toJson(ops, dataType));
 	}
 
 	private boolean isEmpty() {

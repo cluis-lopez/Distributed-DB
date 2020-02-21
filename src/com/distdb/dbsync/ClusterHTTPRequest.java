@@ -166,7 +166,9 @@ public class ClusterHTTPRequest implements Runnable {
 			String user = jo.get("user").getAsString();
 			String token = jo.get("token").getAsString();
 			if (user.equals(jo.get("user").getAsString())) { // True Reserved for authentication
-				
+				String replicaName = jo.get("replicaName").getAsString();
+				String[] temp = new String[2];
+				temp = cluster.replicaWantsToJoinCluster(replicaName);
 			}
 		}
 		return ret;

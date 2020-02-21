@@ -61,10 +61,13 @@ public class DistServer {
 
 		// Initialize Properties
 
-		String propsFile = System.getProperty("ConfigFile");
+		String propsFile = System.getenv("ConfigFile");
 		if (propsFile == null || propsFile.equals("")) {
 			propsFile = "etc/config/DistDB.json";
 		}
+		
+		System.err.println("Using config file at " + propsFile);
+		
 		Gson json = new Gson();
 		Properties props = null;
 		try {
@@ -78,6 +81,8 @@ public class DistServer {
 		}
 
 		// Initialize cluster
+		
+		String nodeName = props.nodeName;
 
 		DBType type;
 		if (props.ThisNode.equals("Master") || props.ThisNode.equals("MASTER"))
@@ -85,7 +90,7 @@ public class DistServer {
 		else
 			type = DBType.REPLICA;
 
-		Cluster cluster = new Cluster(log, props.nodes, type);
+		Cluster cluster = new Cluster(log, nodeName, props.nodes, type);
 
 		if (!cluster.setMaster()) {
 			System.err.println("Cannot set cluster Master. Exiting...");
@@ -111,19 +116,26 @@ public class DistServer {
 		
 		// If I'm a replica. Joins the cluster
 		
-		if (type == DBType.REPLICA)
-			cluster.joinMeToCluster();
+		if (type == DBType.REPLICA) {
+			temp = cluster.joinMeToCluster();
+			if (temp[0].equals("FAIL")) {
+				System.err.println("This replica cannot join the cluster. Exiting "+ temp[1]);
+				log.log(Level.SEVERE, "Replica cannot join the cluster. Exiting "+ temp[1]);
+				return;
+			}
+		}
 
-		// Initialize Databases
+		// Initialize Syncer
 		MasterSyncer dsync = null;
 		ClusterHTTPServer clusterHTTPserver = null;
 
 		if (type == DBType.MASTER)
 			dsync = new MasterSyncer(log, cluster, 1000 * props.syncDiskTime, 1000 * props.syncNetTime);
 
-		// Start the cluster HTTP Server
+		// Initialize the cluster HTTP Server
 		clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster, dbs);
 
+		// Initialize databases
 		dbs = new HashMap<>();
 
 		for (Map<String, String> m : props.databases) {
@@ -139,7 +151,7 @@ public class DistServer {
 				dbs.get(m.get("name")).open();
 		}
 
-		// Start Sync Server
+		// Start Syncer thread
 
 		if (type == DBType.MASTER && dsync != null) {
 			Thread dSync = new Thread(dsync);
@@ -147,12 +159,13 @@ public class DistServer {
 			dSync.start();
 		}
 
-		// Start the cluster server
+		// Start the Cluster HTTP server
 
 		Thread clusterServer = new Thread(clusterHTTPserver);
-		clusterServer.setName("Net Syncer");
+		clusterServer.setName("Cluster HTTP Server");
+		clusterServer.start();
 
-		// Start the Data Server
+		// Start the HTTP Data Server
 
 		ServerSocket server = null;
 
@@ -188,6 +201,7 @@ public class DistServer {
 	}
 
 	private class Properties {
+		String nodeName;
 		String ThisNode;
 		int dataPort;
 		int clusterPort;
