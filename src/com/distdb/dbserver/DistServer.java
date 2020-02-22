@@ -24,7 +24,7 @@ import com.google.gson.JsonSyntaxException;
 
 public class DistServer {
 
-	static Logger log = Logger.getLogger("DistServer");
+	private Logger log = Logger.getLogger("DistServer");
 
 	public enum DBType {
 		MASTER, REPLICA
@@ -98,14 +98,14 @@ public class DistServer {
 			return;
 		}
 
-		String[] temp = cluster.setReplicas();
-		if (temp[0].equals("FAIL")) {
-			System.err.println("Failing setup cluster " + temp[1]);
-			return;
-		}
-
 		System.err.println("This node acts as " + type);
+		
 		if (type == DBType.MASTER) {
+			String[] temp = cluster.setReplicas();
+			if (temp[0].equals("FAIL")) {
+				System.err.println("Failing setup cluster " + temp[1]);
+				return;
+			}
 			System.err.println(temp[1]);
 			if (cluster.liveReplicas.size() > 0) {
 				System.err.println("Replicas living a this time:");
@@ -117,7 +117,7 @@ public class DistServer {
 		// If I'm a replica. Joins the cluster
 		
 		if (type == DBType.REPLICA) {
-			temp = cluster.joinMeToCluster();
+			String[] temp = cluster.joinMeToCluster();
 			if (temp[0].equals("FAIL")) {
 				System.err.println("This replica cannot join the cluster. Exiting "+ temp[1]);
 				log.log(Level.SEVERE, "Replica cannot join the cluster. Exiting "+ temp[1]);
@@ -131,9 +131,6 @@ public class DistServer {
 
 		if (type == DBType.MASTER)
 			dsync = new MasterSyncer(log, cluster, 1000 * props.syncDiskTime, 1000 * props.syncNetTime);
-
-		// Initialize the cluster HTTP Server
-		clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster, dbs);
 
 		// Initialize databases
 		dbs = new HashMap<>();
@@ -150,6 +147,9 @@ public class DistServer {
 			if (m.get("autoStart") != null && (m.get("autoStart").equals("y") || m.get("autoStart").equals("Y")))
 				dbs.get(m.get("name")).open();
 		}
+		
+		// Initialize the cluster HTTP Server
+				clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster, dbs);
 
 		// Start Syncer thread
 

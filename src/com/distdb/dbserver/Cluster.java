@@ -46,7 +46,7 @@ public class Cluster {
 				else
 					temp = DBType.REPLICA;
 
-				Node node = new Node(n.get("name"), url, temp);
+				Node node = new Node(log, n.get("name"), url, temp);
 				System.err.println("Adding node " + node.name + " as " + node.dbtype);
 				declaredNodes.get(node.dbtype).add(node);
 

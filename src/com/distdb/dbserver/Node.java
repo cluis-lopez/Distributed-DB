@@ -6,7 +6,9 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.util.Date;
 import java.util.Scanner;
+import java.util.logging.Logger;
 
+import com.distdb.HttpHelpers.HTTPDataMovers;
 import com.distdb.HttpHelpers.HelperJson;
 import com.distdb.dbserver.DistServer.DBType;
 
@@ -15,6 +17,7 @@ import com.distdb.dbserver.DistServer.DBType;
  *
  */
 public class Node {
+	private Logger log;
 	public Node me;
 	public String name;
 	public URL url;
@@ -23,7 +26,7 @@ public class Node {
 	public long lastReached;
 	public Date lastUpdated;
 
-	public Node(String name, URL url, DBType dbtype) {
+	public Node(Logger log, String name, URL url, DBType dbtype) {
 		this.name = name;
 		this.url = url;
 		this.dbtype = dbtype;
@@ -54,20 +57,12 @@ public class Node {
 	}
 
 	public boolean isAlive() {
-		boolean ret = false;
-		try {
-			URL url2 = new URL(url.toString() + "/ping");
-			InputStream response = url2.openStream();
-			Scanner scanner = new Scanner(response);
-			String responseBody = scanner.useDelimiter("\\A").next();
-			scanner.close();
-			response.close();
-			if (HelperJson.decodeCodes(responseBody)[0].equals("OK"))
-				ret = true;
-		} catch (IOException e) {
-			ret = false;
-		}
-		return ret;
+		String responseBody = HTTPDataMovers.postData(log, url, "", "ping", "{'user':'', 'token':''}");
+		if (responseBody.equals(""))
+			return false;
+		if (HelperJson.decodeCodes(responseBody)[0].equals("OK"))
+				return true;;
+		return false;
 	}
 	
 	public String[] fullCheck() {

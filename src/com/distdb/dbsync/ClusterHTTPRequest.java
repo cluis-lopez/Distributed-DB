@@ -78,16 +78,18 @@ public class ClusterHTTPRequest implements Runnable {
 
 			HeaderDecoder reqLine = new HeaderDecoder(request);
 			// Logging
+			System.err.println(request+" : "+reqLine+":"+body);
 
-			log.log(Level.INFO, "Serving {0}",
-					reqLine.command + " " + reqLine.resource + " from " + socket.getInetAddress().toString());
+			//log.log(Level.INFO, "Serving {0}",
+					//reqLine.command + " " + reqLine.resource + " from " + socket.getInetAddress().toString());
 
 			String response = "";
 
 			// Only POSTs are allowed
-			boolean reqValid = reqLine.command.equals("POST") && body.length() != 0
+			boolean reqValid = body != null && reqLine.command.equals("POST") && body.length() != 0
 					&& (reqLine.protocol.equals("HTTP/1.0") || reqLine.protocol.equals("HTTP/1.1"));
 
+			System.err.println(reqValid);
 			if (reqValid)
 				response = processPost(reqLine, body);
 			else// Bad Request
@@ -110,12 +112,24 @@ public class ClusterHTTPRequest implements Runnable {
 		String resp = "";
 
 		String[] res = reqLine.resource.split("/"); // First element should be DataBase name, Second must be the command
+		System.err.println(res.length);
+		for (String s : res)
+			System.err.println(s);
+		
 		if (res == null || res.length < 2 || res.length > 3) {
 			resp = "HTTP/1.1 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
-		} else if (res[1].equals("ping")) {
-			ret = answerPing(body);
-		} else if (res[1].equals("joinCluster")) {
-			ret = joinCluster(body);
+		} else if (res.length == 2) {
+			if (res[1].equals("ping"))
+				ret = answerPing(body);
+			if (res[1].equals("joinCluster")) {
+				System.err.println(dbs);
+				for (String s: dbs.keySet())
+					System.err.println(s);
+				ret = joinCluster(body);
+			}
+			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
+					+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+				System.err.println(resp);
 		} else if (res.length == 3) {
 			String dbname = res[1];
 			String operation = res[2];
@@ -128,6 +142,7 @@ public class ClusterHTTPRequest implements Runnable {
 			
 			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
 				+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			System.err.println(resp);
 		} else {
 			resp = "HTTP/1.1 400 Bad Request (Unknown Operation)" + newLine + newLine;
 		}
@@ -138,6 +153,7 @@ public class ClusterHTTPRequest implements Runnable {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		JsonElement je = new JsonParser().parse(body);
+		System.err.println(body);
 		if (je.isJsonObject()) {
 			JsonObject jo = je.getAsJsonObject();
 			String user = jo.get("user").getAsString();
@@ -146,7 +162,9 @@ public class ClusterHTTPRequest implements Runnable {
 				ret[1] = HelperJson.returnCodes("OK", cluster.myURL.toString(), "");
 			}
 		} else {
+			System.err.println("No se ha recibido json");
 			ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json command", "");
+			System.err.println(ret[1]);
 		}
 		return ret;
 	}

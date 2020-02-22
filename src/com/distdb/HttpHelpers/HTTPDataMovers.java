@@ -3,10 +3,10 @@ package com.distdb.HttpHelpers;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class HTTPDataMovers {
@@ -15,7 +15,12 @@ public class HTTPDataMovers {
 		String ret = "";
 		URL uri = null;
 		try {
-			uri = new URL(url + "/" + database + "/" + service);
+			
+			if (database.equals(""))
+				uri = new URL(url + "/" + service);
+			else
+				uri = new URL(url + "/" + database + "/" + service);
+			
 			HttpURLConnection con = (HttpURLConnection) uri.openConnection();
 			con.setRequestMethod("POST");
 			con.setRequestProperty("Content-Type", "application/json");
@@ -29,7 +34,7 @@ public class HTTPDataMovers {
 			output.writeBytes(postData);
 			output.close();
 
-			// "Post data send ... waiting for reply");
+			//Post data send ... waiting for reply
 			int code = con.getResponseCode(); // 200 = HTTP_OK
 
 			// read the response
@@ -45,10 +50,17 @@ public class HTTPDataMovers {
 			} else {
 				ret = code + " : " +con.getResponseMessage();
 			}
+		}catch (SocketTimeoutException e) {
+			System.err.println("HTTP POST Timeout");
+		} catch (ConnectException e) {
+			System.err.println("Connection Refused");
 		} catch (IOException e) {
-			log.log(Level.WARNING, "cannot send post data to " + uri);
-			log.log(Level.WARNING, e.getMessage());
-			log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
+			System.err.println("Error enviando POST a la URI "+ uri);
+			//log.log(Level.WARNING, "cannot send post data to " + uri);
+			//log.log(Level.WARNING, e.getMessage());
+			//log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
+			System.err.println(e.getMessage());
+			e.printStackTrace();
 		}
 
 		return ret;
