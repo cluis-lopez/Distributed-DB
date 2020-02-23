@@ -53,9 +53,8 @@ public class DatabaseTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-		
-		dsync = new MasterSyncer(log,30, 30);
+
+		dsync = new MasterSyncer(log, null, 30, 30);
 		db = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync);
 		u1 = new User("clopez", "clopez@gmail.com", "1234");
 		u2 = new User("mariano", "mrajoy@hotmail.com", "1234");
@@ -83,13 +82,13 @@ public class DatabaseTest {
 		Assertions.assertEquals("OK", test4[0]);
 		String[] test5 = db.insert("Event", e2);
 		Assertions.assertEquals("OK", test5[0]);
-		//Insercion de objeto no existente
-		String [] test6 = db.insert("ObjetoInexistente", e2);
+		// Insercion de objeto no existente
+		String[] test6 = db.insert("ObjetoInexistente", e2);
 		Assertions.assertEquals("Invalid Object", test6[1]);
-		//Insercion de objeto existente pero con la clase confundida
-		String [] test7 = db.insert("User", e2);
+		// Insercion de objeto existente pero con la clase confundida
+		String[] test7 = db.insert("User", e2);
 		Assertions.assertEquals("Invalid Object", test7[1]);
-		 jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
+		jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
 		Assertions.assertEquals(2, jo.getAsJsonPrimitive("Event").getAsInt());
 
 	}
@@ -110,7 +109,8 @@ public class DatabaseTest {
 	void testSearch() {
 		u4 = (User) new Gson().fromJson(db.getById("User", u2.id)[2], User.class);
 		Assertions.assertEquals(u4, null);
-		u4 = (User) new Gson().fromJson(db.getById("User", u1.id)[2], User.class);;
+		u4 = (User) new Gson().fromJson(db.getById("User", u1.id)[2], User.class);
+		;
 		Assertions.assertEquals(u4.id, u1.id);
 		e3 = (Event) new Gson().fromJson(db.getById("Event", "Evento2")[2], Event.class);
 		Assertions.assertEquals(e2.id, e3.id);
@@ -119,11 +119,11 @@ public class DatabaseTest {
 		Assertions.assertEquals(0, l.size());
 		l = new Gson().fromJson(db.searchByField("User", "lastLogin", "hot")[2], List.class);
 		Assertions.assertEquals(0, l.size());
-		
+
 		java.lang.reflect.Type dt = TypeToken.getParameterized(List.class, User.class).getType();
 		l = new Gson().fromJson(db.searchByField("User", "mail", "hot")[2], dt);
 		Assertions.assertEquals(1, l.size());
-		
+
 		Assertions.assertEquals("juanito", ((User) l.get(0)).name);
 		u4 = new User("lolita", "lolita@gmail.com", "7890");
 		db.insert("User", u4);
@@ -131,8 +131,8 @@ public class DatabaseTest {
 		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
 		l = new Gson().fromJson(db.searchByField("User", "mail", "gm")[2], dt);
 		Assertions.assertEquals(2, l.size());
-		Assertions.assertTrue(l.get(0).name.equals("clopez") ||  l.get(1).name.equals("clopez"));
-		Assertions.assertTrue(l.get(0).name.equals("lolita") ||  l.get(1).name.equals("lolita"));
+		Assertions.assertTrue(l.get(0).name.equals("clopez") || l.get(1).name.equals("clopez"));
+		Assertions.assertTrue(l.get(0).name.equals("lolita") || l.get(1).name.equals("lolita"));
 	}
 
 	@Test
@@ -156,30 +156,31 @@ public class DatabaseTest {
 		JsonObject jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
 		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
 		Assertions.assertEquals(2, jo.getAsJsonPrimitive("Event").getAsInt());
-				
+
 		Object o = db.getById("User", u1.id);
 		System.err.println("Tipo de objeto " + o.getClass().getTypeName());
 		User u5 = new Gson().fromJson(db.getById("User", u3.id)[2], User.class);
 		Assertions.assertEquals(true, u5.id.equals(u3.id));
-		//Assertions.assertEquals(u4, u1);
+		// Assertions.assertEquals(u4, u1);
 		e4 = new Gson().fromJson(db.getById("Event", "Evento2")[2], Event.class);
 		Assertions.assertEquals("Preocupante", e4.type);
-		
-		 //Insertamos nuevos valores en la coleccion de usuarios
+
+		// Insertamos nuevos valores en la coleccion de usuarios
 		User u10 = new User("nuevoclopez", "nuevoclopez@gmail.com", "1234");
 		User u11 = new User("nuevalolita", "nuevalolita@hotamil.com", "1234");
-		Event e10= new Event("Evento10", "Jodidillo", "... al loro ...");
+		Event e10 = new Event("Evento10", "Jodidillo", "... al loro ...");
 		db.insert("User", u10);
 		db.insert("User", u11);
 		db.insert("Event", e10);
 		db.close();
-		
-		//Reabrimos la BBDD Ahora debería de haber 5 usuarios y 3 eventos
-		
+
+		// Reabrimos la BBDD Ahora debería de haber 5 usuarios y 3 eventos
+
 		db = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync);
 		db.open();
-		 jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
-		 Assertions.assertEquals(3, jo.getAsJsonPrimitive("Event").getAsInt());
-		 Assertions.assertEquals(5, jo.getAsJsonPrimitive("User").getAsInt());
+		jo = new JsonParser().parse(db.getInfo()).getAsJsonObject();
+		Assertions.assertEquals(3, jo.getAsJsonPrimitive("Event").getAsInt());
+		Assertions.assertEquals(5, jo.getAsJsonPrimitive("User").getAsInt());
+		db.close();
 	}
 }

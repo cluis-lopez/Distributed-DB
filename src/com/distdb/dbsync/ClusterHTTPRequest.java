@@ -77,11 +77,10 @@ public class ClusterHTTPRequest implements Runnable {
 			}
 
 			HeaderDecoder reqLine = new HeaderDecoder(request);
-			// Logging
-			System.err.println(request+" : "+reqLine+":"+body);
 
-			//log.log(Level.INFO, "Serving {0}",
-					//reqLine.command + " " + reqLine.resource + " from " + socket.getInetAddress().toString());
+			// log.log(Level.INFO, "Serving {0}",
+			// reqLine.command + " " + reqLine.resource + " from " +
+			// socket.getInetAddress().toString());
 
 			String response = "";
 
@@ -89,7 +88,6 @@ public class ClusterHTTPRequest implements Runnable {
 			boolean reqValid = body != null && reqLine.command.equals("POST") && body.length() != 0
 					&& (reqLine.protocol.equals("HTTP/1.0") || reqLine.protocol.equals("HTTP/1.1"));
 
-			System.err.println(reqValid);
 			if (reqValid)
 				response = processPost(reqLine, body);
 			else// Bad Request
@@ -99,6 +97,7 @@ public class ClusterHTTPRequest implements Runnable {
 			pout.close();
 			out.close();
 			in.close();
+			socket.close();
 
 		} catch (IOException e) {
 			log.log(Level.WARNING, "Cannot read from socket");
@@ -112,24 +111,18 @@ public class ClusterHTTPRequest implements Runnable {
 		String resp = "";
 
 		String[] res = reqLine.resource.split("/"); // First element should be DataBase name, Second must be the command
-		System.err.println(res.length);
-		for (String s : res)
-			System.err.println(s);
-		
+
 		if (res == null || res.length < 2 || res.length > 3) {
 			resp = "HTTP/1.1 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
+
 		} else if (res.length == 2) {
 			if (res[1].equals("ping"))
 				ret = answerPing(body);
-			if (res[1].equals("joinCluster")) {
-				System.err.println(dbs);
-				for (String s: dbs.keySet())
-					System.err.println(s);
+			if (res[1].equals("joinCluster"))
 				ret = joinCluster(body);
-			}
 			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
 					+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
-				System.err.println(resp);
+
 		} else if (res.length == 3) {
 			String dbname = res[1];
 			String operation = res[2];
@@ -137,12 +130,12 @@ public class ClusterHTTPRequest implements Runnable {
 				ret = sendObjectFile(dbname, body);
 			if (operation.equals("getLoggingFile")) // From Replica: Master must send logfile
 				ret = sendLoggingFile(dbname, body);
-			if (operation.equals("sendUpdate")); // From Master. Replica must accept logging operations
+			if (operation.equals("sendUpdate")) // From Master. Replica must accept logging operations
 				ret = getUpdate(dbname, body);
-			
+
 			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
-				+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
-			System.err.println(resp);
+					+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+
 		} else {
 			resp = "HTTP/1.1 400 Bad Request (Unknown Operation)" + newLine + newLine;
 		}
@@ -153,7 +146,6 @@ public class ClusterHTTPRequest implements Runnable {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		JsonElement je = new JsonParser().parse(body);
-		System.err.println(body);
 		if (je.isJsonObject()) {
 			JsonObject jo = je.getAsJsonObject();
 			String user = jo.get("user").getAsString();
@@ -172,12 +164,12 @@ public class ClusterHTTPRequest implements Runnable {
 	private String[] joinCluster(String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
-		
+
 		if (cluster.myType == DBType.REPLICA) {
 			ret[1] = HelperJson.returnCodes("FAIL", "I'm a replica. Another replica tries to join me", "");
 			return ret;
 		}
-		
+
 		JsonElement je = new JsonParser().parse(body);
 		if (je.isJsonObject()) {
 			JsonObject jo = je.getAsJsonObject();
@@ -187,12 +179,15 @@ public class ClusterHTTPRequest implements Runnable {
 				String replicaName = jo.get("replicaName").getAsString();
 				String[] temp = new String[2];
 				temp = cluster.replicaWantsToJoinCluster(replicaName);
+				if (temp[0].equals("OK"))
+					ret[1] = HelperJson.returnCodes("OK", replicaName + " has joined the cluster", "");
+				else
+					ret[1] = HelperJson.returnCodes("FAIL", temp[1], "");
 			}
 		}
 		return ret;
 	}
-		
-		
+
 	private String[] sendObjectFile(String dbName, String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
@@ -209,18 +204,23 @@ public class ClusterHTTPRequest implements Runnable {
 				String objectName = jo.get("objectName").getAsString();
 				DBObject dbo = null;
 				if (dbs.get(dbName) != null)
-					dbo = dbs.get(dbName).dbobjs.get("objectName");
+					dbo = dbs.get(dbName).dbobjs.get(objectName);
 				if (dbo == null) {
-					ret[1] = HelperJson.returnCodes("FAIL", "Invalid database name or object collection name", "");
+					ret[1] = HelperJson.returnCodes("FAIL",
+							"Invalid database name (" + dbName + ") or object collection name (" + objectName + ")",
+							"");
 					return ret;
 				}
-				// Send the collection of the requested object
+				// Send the collection of the requested objects
 
 				String dataFile = dbs.get(dbName).getMasterInfo()[0] + "/_data_" + objectName;
 				String content = "";
 				try {
 					content = new String(Files.readAllBytes(Paths.get(dataFile)));
-					ret[1] = HelperJson.returnCodes("OK", objectName + "datafile sent", content);
+					ret[1] = HelperJson.returnCodes("OK", objectName + " datafile sent", content);
+					System.err.println( "Sending object collection " + objectName + " for database " + dbName);
+					System.err.println(ret[1]);
+					System.err.println(HelperJson.decodeCodes(ret[1])[1]);
 				} catch (IOException e) {
 					log.log(Level.SEVERE, "cannot read & send log file for " + dbName);
 					log.log(Level.SEVERE, e.getMessage());
@@ -263,8 +263,7 @@ public class ClusterHTTPRequest implements Runnable {
 					log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 					ret[1] = HelperJson.returnCodes("FAIL", "No file", "");
 				}
-			}
-			else {
+			} else {
 				ret[1] = HelperJson.returnCodes("FAIL", "Nor Authorized", "");
 			}
 		} else {
@@ -272,7 +271,7 @@ public class ClusterHTTPRequest implements Runnable {
 		}
 		return ret;
 	}
-	
+
 	private String[] getUpdate(String dbName, String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
@@ -281,7 +280,7 @@ public class ClusterHTTPRequest implements Runnable {
 			ret[1] = HelperJson.returnCodes("FAIL", "A master should not receive this request", "");
 			return ret;
 		}
-		
+
 		if (je.isJsonObject()) {
 			JsonObject jo = je.getAsJsonObject();
 			String user = jo.get("user").getAsString();
@@ -291,7 +290,7 @@ public class ClusterHTTPRequest implements Runnable {
 				// This replica has got a new logging that must update database
 			}
 		}
-		
+
 		return ret;
 	}
 }

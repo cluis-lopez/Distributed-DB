@@ -73,7 +73,6 @@ public class MasterDatabase extends Database {
 		if (!props.isProperlyShutdown) { // La BBDD no se ha apagado correctamente asi que
 											// debemos aplicar los logs
 			log.log(Level.INFO, "Database was not properly shutdown. Recovering from logs, if any");
-			boolean result = true;
 			try {
 				FileReader fr = new FileReader(dataPath + "/" + dbname + "_logging");
 				JsonArray array = new JsonParser().parse(fr).getAsJsonArray();
@@ -88,16 +87,21 @@ public class MasterDatabase extends Database {
 						remove(jobj.get("objectName").getAsString(), jobj.get("id").getAsString(), false);
 				}
 				fr.close();
-			} catch (JsonIOException | JsonSyntaxException | ClassNotFoundException | IOException e) {
+			} catch (JsonIOException | JsonSyntaxException | ClassNotFoundException e) {
 				System.err.println("No se ha podido aplicar el log a la base de datos " + dbname);
 				log.log(Level.SEVERE, "Cannot apply log to database " + dbname);
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
-				;
+				ret[0] = "FAIL"; ret[1] = "Cannot apply log to databse ... Corruption???";
+				return ret;
+			} catch (IOException e) {
+				// El fichero de logging no existe, una de dos ... o es la primera que vez que se accede
+				// y no han habido operaciones de I/O ... o la ultima vez se cerró correctamente
+				//y entonces no deberíamos estar en este punto (isProperlyShutdown == true
+				System.err.println("No existe el fichero de logging");
+				log.log(Level.WARNING, "Master opening non-exixtent logging file. Double check unless this is the first time you open the database");
+				ret[1] = dbname + " WARNING Check if this is the first time you open the database!!";
 			}
-			if (!result) { // WARNING: implementar la gestión de errores
-				System.err.println("No se han podido aplicar correctamente todos los log a la base de datos " + dbname);
-				log.log(Level.SEVERE, "Cannot properly apply any log to database " + dbname);
-			}
+				
 		}
 
 		dSyncer.addDatabase(dbname, dbobjs, dataPath + "/");
@@ -130,17 +134,17 @@ public class MasterDatabase extends Database {
 			if (Files.isRegularFile(path)) {
 				try {
 					Files.delete(path);
+					log.log(Level.INFO, "Properly removed logging file for database " + dbname);
+					props.isProperlyShutdown = true;
+					props.lastProperlyShutdown = new Date();
+					updateProps();
+					ret[1] = "Database closed";
 				} catch (IOException e) {
 					log.log(Level.SEVERE, "Cannot delete logging for database " + dbname);
 					log.log(Level.SEVERE, e.getMessage());
 					log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 				}
-				log.log(Level.INFO, "Properly removed logging file for database " + dbname);
 			}
-			props.isProperlyShutdown = true;
-			props.lastProperlyShutdown = new Date();
-			updateProps();
-			ret[1] = "Database closed";
 		}
 		return ret;
 	}

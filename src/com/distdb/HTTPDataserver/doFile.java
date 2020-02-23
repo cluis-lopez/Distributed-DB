@@ -18,17 +18,18 @@ public class doFile {
 	
 	public String[] doGet(String resource) {
 		String[] ret = new String[2];
-		ret[0] = "text/plain"; //Default response if cannot determne mimetype
+		ret[0] = "text/plain"; //Default response if cannot determine mimetype
+		String file = adminRootPath + "/" + resource;
 		try {
-			ret[0] = Files.probeContentType(Paths.get(resource));
-			ret[1] = new String (Files.readAllBytes(Paths.get(resource)));
+			ret[0] = Files.probeContentType(Paths.get(file));
+			ret[1] = new String (Files.readAllBytes(Paths.get(file)));
 			if (ret[0] == null) {
-				log.log(Level.WARNING, "Mimetype of " + resource + " cannot be determined");
+				log.log(Level.WARNING, "Mimetype of " + file + " cannot be determined");
 				log.log(Level.WARNING, "Assuming the content matches suffix of file");
 				String fileExt = "";
-				int i = resource.lastIndexOf('.');
+				int i = file.lastIndexOf('.');
 				if (i > 0) {
-					fileExt = resource.substring(i+1);
+					fileExt = file.substring(i+1);
 					ret[0] = GetMimeType.getMimeType(fileExt);
 				}
 			}

@@ -77,7 +77,12 @@ public class MasterSyncer implements Runnable {
 	@Override
 	public void run() {
 		log.log(Level.INFO, "Starting the disk syncer daemon");
-		log.log(Level.INFO, "Syncing to disk every " + waitTime/1000 + " seconds");
+		log.log(Level.INFO, "Syncing replicas every " + waitTime/1000 + " seconds");
+		if (delayLogs)
+			log.log(Level.INFO, "Syncing to Disk every " + waitTime/1000 + " seconds");
+		else
+			log.log(Level.INFO, "Syncing to disk each log as it happens. No delays");
+		
 		while (keepRunning) {
 			diskLog();
 			netSync();
@@ -138,7 +143,7 @@ public class MasterSyncer implements Runnable {
 	}
 	
 	private void netSync() {
-		if (cluster.liveReplicas.size() == 0)
+		if (cluster.liveReplicas.isEmpty())
 			return;
 		for (String s : dbQueue.keySet()) {
 			if (dbQueue.get(s).isEmpty())

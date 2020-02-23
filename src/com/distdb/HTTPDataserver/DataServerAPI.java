@@ -84,17 +84,16 @@ public class DataServerAPI implements Runnable {
 			boolean reqValid = (reqLine.command.equals("GET") || reqLine.command.equals("POST"))
 					&& (reqLine.protocol.equals("HTTP/1.0") || reqLine.protocol.equals("HTTP/1.1"));
 
-			if (reqValid && reqLine.command.equals("GET"))
+			if (!reqValid) // Bad Request
+				response = "HTTP/1.1 400 Bad Request" + newLine + newLine;
+			else if (reqLine.command.equals("GET"))
 				response = processGet(reqLine);
 			// HTTP POST only accepts Json payloads
-			if (reqValid && reqLine.command.equals("POST") && headerFields.get("Content-Type") != null
+			else if (reqLine.command.equals("POST") && headerFields.get("Content-Type") != null
 					&& headerFields.get("Content-Type").equals("application/json"))
 				response = processPost(reqLine);
 			else
 				response = "HTTP/1.1 400 Bad Request (Json payload required)" + newLine + newLine;
-
-			if (!reqValid) // Bad Request
-				response = "HTTP/1.1 400 Bad Request" + newLine + newLine;
 
 			System.out.println(response);
 			pout.print(response);
@@ -102,6 +101,7 @@ public class DataServerAPI implements Runnable {
 			pout.close();
 			out.close();
 			in.close();
+			socket.close();
 
 		} catch (IOException e) {
 			log.log(Level.WARNING, "Cannot read from socket");
@@ -150,12 +150,11 @@ public class DataServerAPI implements Runnable {
 	private String processGet(HeaderDecoder req) {
 		String[] ret = new String[2];
 		String resp;
-		
 			ret = new doFile(log, adminRootPath).doGet(req.resource.substring(1));
 			if (ret[0].equals("")) { // No file found
-				resp = "HTTP/1.0 404 " + ret[1] + newLine + newLine;
+				resp = "HTTP/1.1 404 " + ret[1] + newLine + newLine;
 			} else {
-				resp = "HTTP/1.0 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
+				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
 						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 			}
 			return resp;

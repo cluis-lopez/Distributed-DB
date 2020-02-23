@@ -122,9 +122,12 @@ public class ReplicaDatabase extends Database {
 		jo.addProperty("objectName", cl.getSimpleName());
 		String retCodes = HTTPDataMovers.postData(log, myMaster, dbname, "getObjectFile", jo.toString());
 		String[] codes = HelperJson.decodeCodes(retCodes);
+		System.err.println(codes[0] + " : " + codes[1] + " : " + codes[2]);
 		if (codes[0].equals("OK")) {
 			java.lang.reflect.Type dataType = TypeToken.getParameterized(HashMap.class, String.class, cl).getType();
 			dbo.obj = new Gson().fromJson(codes[3], dataType);
+		} else {
+			
 		}
 	}
 

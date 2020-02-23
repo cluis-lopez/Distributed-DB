@@ -123,6 +123,7 @@ public class DistServer {
 				log.log(Level.SEVERE, "Replica cannot join the cluster. Exiting "+ temp[1]);
 				return;
 			}
+			log.log(Level.INFO, "Joined to cluster");
 		}
 
 		// Initialize Syncer
@@ -194,9 +195,8 @@ public class DistServer {
 			}
 			final DataServerAPI request = new DataServerAPI(log, client, props.adminRootPath, dbs, dsync);
 			Thread thread = new Thread(request);
-			thread.setName("Request Dispatcher #" + thread.getId());
+			thread.setName("Data Request Dispatcher #" + thread.getId());
 			thread.start();
-			;
 		}
 	}
 

@@ -7,6 +7,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -29,9 +33,23 @@ class DistServerTest {
 
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
-		//DistServer ds = new DistServer();
-		//Assume you have to startup the server outside
-		//TestDB1 must be empty before starting
+		// DistServer ds = new DistServer();
+		// Assume you have to startup the server outside
+		// TestDB1 must be empty before starting
+		// Borramos las BBDD de Test
+
+		/*
+		 * Path[] folder = new Path[1]; folder[0] = Paths.get("etc/data/TestDB1/"); for
+		 * (int i = 0; i < folder.length; i++) { Stream<Path> list; try { list =
+		 * Files.list(folder[i]);
+		 * 
+		 * for (Path f : list.toArray(Path[]::new)) { Files.delete(f);
+		 * System.err.println("Borrado el fichero: " + f.toString() + " "); }
+		 * list.close(); } catch (IOException e) {
+		 * System.err.println("No se pueden borrar los ficheros de las BBDD"); } }
+		 * 
+		 * DistServer ds = new DistServer();
+		 */
 	}
 
 	@Test
@@ -39,76 +57,76 @@ class DistServerTest {
 	void testDistServer() {
 		String postData = "{'user': '', 'token': '',  'objectName': 'User', 'args': [ 'clopez', 'clopez@gmail.com', '1234']}";
 		String db = "TestDB1";
-		String ret = sendData(db, "Insert", postData);
+		String ret = postData(db, "Insert", postData);
 		JsonArray ja = new JsonParser().parse(ret).getAsJsonArray();
 		Assertions.assertEquals("OK", ja.get(0).getAsString());
 		postData = "{'user': '', 'token': '',  'objectName': 'User', 'args': [ 'manolo', 'manolo@hotmail.com', '1234']}";
-		ret = sendData(db, "Insert", postData);
+		ret = postData(db, "Insert", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		Assertions.assertEquals("OK", ja.get(0).getAsString());
 		postData = "{'user': '', 'token': '',  'objectName': 'User', 'args': [ 'jacinto', 'jacinto@hotmail.com', '1234']}";
-		ret = sendData(db, "Insert", postData);
+		ret = postData(db, "Insert", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		Assertions.assertEquals("OK", ja.get(0).getAsString());
 		postData = "{'user': '', 'token': '',  'command': 'dbInfo', 'payload': {}}";
-		ret = sendData(db, "AdminServer", postData);
+		ret = postData(db, "AdminServer", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		JsonObject jo = ja.get(2).getAsJsonObject();
 		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
 		postData = "{'user': '', 'token': '',  'objectName': 'User', 'fieldName': 'name', 'value': 'lopez'}";
-		ret = sendData(db, "SearchByField", postData);
+		ret = postData(db, "SearchByField", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		JsonArray ja2 = ja.get(2).getAsJsonArray();
 		Assertions.assertEquals(1, ja2.size());
 		com.distdb.TestDB1.User u1 = (User) new Gson().fromJson(ja2.get(0), User.class);
 		Assertions.assertEquals("clopez", u1.name);
-		
+
 		postData = "{'user': '', 'token': '',  'objectName': 'Event', 'args': [ 'Evento1', 'Lo del coronavirus', 'en Barcelona']}";
-		ret = sendData(db, "Insert", postData);
+		ret = postData(db, "Insert", postData);
 		postData = "{'user': '', 'token': '',  'objectName': 'Event', 'args': [ 'Evento2', 'Lo de los moviles', 'sine die']}";
-		ret = sendData(db, "Insert", postData);
+		ret = postData(db, "Insert", postData);
 		postData = "{'user': '', 'token': '',  'command': 'dbInfo', 'payload': {}}";
-		ret = sendData(db, "AdminServer", postData);
+		ret = postData(db, "AdminServer", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		jo = ja.get(2).getAsJsonObject();
 		Assertions.assertEquals(2, jo.getAsJsonPrimitive("Event").getAsInt());
-		
-		//3 "User" and 2 "Events" in the database
+
+		// 3 "User" and 2 "Events" in the database
 		// Close and restart
 		try {
-			Thread.sleep(40000); //Wait 40 seconds for the syncer to write on disk
+			Thread.sleep(10000); // Wait 10 seconds for the syncer to write on disk
 		} catch (InterruptedException e) {
-			
+
 		}
 		postData = "{'user': '', 'token': '',  'command': 'shutdown', 'payload': {}}";
-		ret = sendData(db, "AdminServer", postData);
+		ret = postData(db, "AdminServer", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		Assertions.assertEquals("OK", ja.get(0).getAsString());
 		Assertions.assertEquals("Database closed", ja.get(1).getAsString());
 		postData = "{'user': '', 'token': '',  'command': 'startup', 'payload': {'configFile': 'TestDB1.json', 'defPath': 'com.distdb.TestDB1', 'DBType': 'Master'}}";
-		ret = sendData(db, "AdminServer", postData);
+		ret = postData(db, "AdminServer", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		Assertions.assertEquals("OK", ja.get(0).getAsString());
 		postData = "{'user': '', 'token': '',  'command': 'dbInfo', 'payload': {}}";
-		ret = sendData(db, "AdminServer", postData);
+		ret = postData(db, "AdminServer", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		jo = ja.get(2).getAsJsonObject();
 		Assertions.assertEquals(2, jo.getAsJsonPrimitive("Event").getAsInt());
 		postData = "{'user': '', 'token': '',  'command': 'dbInfo', 'payload': {}}";
-		ret = sendData(db, "AdminServer", postData);
+		ret = postData(db, "AdminServer", postData);
 		ja = new JsonParser().parse(ret).getAsJsonArray();
 		jo = ja.get(2).getAsJsonObject();
 		Assertions.assertEquals(3, jo.getAsJsonPrimitive("User").getAsInt());
-		
+
 	}
-	
+
 	@Test
 	@Order(2)
 	void testGETServer() {
-		
+
 	}
 
-	private String sendData(String database, String service, String postData) {
+	private String postData(String database, String service, String postData) {
 		String ret = "";
 		URL uri;
 		try {
@@ -140,7 +158,7 @@ class DistServerTest {
 				ret = resultBuf.toString();
 				input.close();
 			} else {
-				ret = code + " : " +con.getResponseMessage();
+				ret = code + " : " + con.getResponseMessage();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

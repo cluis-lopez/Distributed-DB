@@ -55,7 +55,6 @@ public class ClusterHTTPServer implements Runnable {
 			final ClusterHTTPRequest request = new ClusterHTTPRequest(log, client, cluster, dbs);
 			Thread thread = new Thread(request);
 			thread.setName("Cluster request thread" + thread.getId());
-			System.err.println("Lanzando thread por conexion "+ thread.getId());
 			thread.start();
 		}
 	}

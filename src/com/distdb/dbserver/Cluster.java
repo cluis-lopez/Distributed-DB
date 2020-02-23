@@ -11,7 +11,9 @@ import java.util.logging.Logger;
 
 import com.distdb.HttpHelpers.HTTPDataMovers;
 import com.distdb.dbserver.DistServer.DBType;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class Cluster {
 	private Logger log;
@@ -116,9 +118,11 @@ public class Cluster {
 		jo.addProperty("user", "");
 		jo.addProperty("token", "");
 		jo.addProperty("replicaName", myName);
-		ret[1] = HTTPDataMovers.postData(log, myMaster.url, "", "joinCluster", jo.toString());
+		String s = HTTPDataMovers.postData(log, myMaster.url, "", "joinCluster", jo.toString());
 		// Modify for retrying ...
-		ret[0] = "OK";
+		JsonElement je = new JsonParser().parse(s);
+		ret[0] = je.getAsJsonArray().get(0).getAsString();
+		ret[1] = je.getAsJsonArray().get(1).getAsString();
 		return ret;
 	}
 
@@ -152,6 +156,7 @@ public class Cluster {
 		newReplica.isLive = true;
 		newReplica.lastReached = System.currentTimeMillis();
 		liveReplicas.add(newReplica);
+		log.log(Level.INFO, "The node " + replicaName +" has joined the cluster");
 		ret[0] = "OK";
 		return ret;
 	}
