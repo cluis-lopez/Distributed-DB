@@ -116,29 +116,43 @@ public class ClusterHTTPRequest implements Runnable {
 			resp = "HTTP/1.1 400 Bad Request (Expected databaseName/Operation)" + newLine + newLine;
 
 		} else if (res.length == 2) {
-			if (res[1].equals("ping"))
+			if (res[1].equals("ping")) {
 				ret = answerPing(body);
-			if (res[1].equals("joinCluster"))
+				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
+						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			} else if (res[1].equals("joinCluster")) {
 				ret = joinCluster(body);
-			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
-					+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
+						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			} else if (res[1].equals("leaveCluster")) {
+				ret = leaveCluster(body);
+				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
+						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			} else
+				resp = "HTTP/1.1 400 Bad Request (Unknown Operation)" + newLine + newLine;
 
 		} else if (res.length == 3) {
 			String dbname = res[1];
 			String operation = res[2];
-			if (operation.equals("getObjectFile")) // From Replica: Master must send datafile
+			if (operation.equals("getObjectFile")) { // From Replica: Master must send datafile
 				ret = sendObjectFile(dbname, body);
-			if (operation.equals("getLoggingFile")) // From Replica: Master must send logfile
+				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
+						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			} else if (operation.equals("getLoggingFile")) { // From Replica: Master must send logfile
 				ret = sendLoggingFile(dbname, body);
-			if (operation.equals("sendUpdate")) // From Master. Replica must accept logging operations
+				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
+						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			} else if (operation.equals("sendUpdate")) { // From Master. Replica must accept logging operations
 				ret = getUpdate(dbname, body);
+				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
+						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			} else {
+				resp = "HTTP/1.1 400 Bad Request (Unknown Operation)" + newLine + newLine;
+			}
 
-			resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date() + newLine
-					+ "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
-
-		} else {
+		} else
 			resp = "HTTP/1.1 400 Bad Request (Unknown Operation)" + newLine + newLine;
-		}
+
 		return resp;
 	}
 
@@ -154,9 +168,7 @@ public class ClusterHTTPRequest implements Runnable {
 				ret[1] = HelperJson.returnCodes("OK", cluster.myURL.toString(), "");
 			}
 		} else {
-			System.err.println("No se ha recibido json");
 			ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json command", "");
-			System.err.println(ret[1]);
 		}
 		return ret;
 	}
@@ -185,6 +197,31 @@ public class ClusterHTTPRequest implements Runnable {
 					ret[1] = HelperJson.returnCodes("FAIL", temp[1], "");
 			}
 		}
+		return ret;
+	}
+	
+	private String[] leaveCluster(String body) {
+		String[] ret = new String[2];
+		ret[0] = "application/json";
+
+		if (cluster.myType == DBType.REPLICA) {
+			ret[1] = HelperJson.returnCodes("FAIL", "I'm a replica and cannot attend this request", "");
+			return ret;
+		}
+
+		JsonElement je = new JsonParser().parse(body);
+		if (je.isJsonObject()) {
+			JsonObject jo = je.getAsJsonObject();
+			String user = jo.get("user").getAsString();
+			String token = jo.get("token").getAsString();
+			if (user.equals(jo.get("user").getAsString())) { // True Reserved for authentication
+				ret = cluster.replicaWantsToLeaveCluster(jo.get("replicaName").getAsString());
+			} else {
+				ret[1] = HelperJson.returnCodes("FAIL", "Unauthorized", "");
+			}
+		} else
+			ret[1] = HelperJson.returnCodes("FAIL", "Malformed Json request", "");
+		
 		return ret;
 	}
 
@@ -217,10 +254,9 @@ public class ClusterHTTPRequest implements Runnable {
 				String content = "";
 				try {
 					content = new String(Files.readAllBytes(Paths.get(dataFile)));
-					ret[1] = HelperJson.returnCodes("OK", objectName + " datafile sent", content);
-					System.err.println( "Sending object collection " + objectName + " for database " + dbName);
-					System.err.println(ret[1]);
-					System.err.println(HelperJson.decodeCodes(ret[1])[1]);
+					JsonElement je2 = new JsonParser().parse(content);
+					ret[1] = HelperJson.returnCodes("OK", objectName + " datafile sent",
+							je2.getAsJsonObject().toString());
 				} catch (IOException e) {
 					log.log(Level.SEVERE, "cannot read & send log file for " + dbName);
 					log.log(Level.SEVERE, e.getMessage());
@@ -258,9 +294,10 @@ public class ClusterHTTPRequest implements Runnable {
 					content = new String(Files.readAllBytes(Paths.get(loggingFile)));
 					ret[1] = HelperJson.returnCodes("OK", dbName + " Log file sent", content);
 				} catch (IOException e) {
-					log.log(Level.SEVERE, "cannot read & send log file for " + dbName);
-					log.log(Level.SEVERE, e.getMessage());
-					log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+					// log.log(Level.SEVERE, "cannot read & send log file for " + dbName);
+					// log.log(Level.SEVERE, e.getMessage());
+					// log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
+					System.err.println("Cannot read & send log file for " + dbName);
 					ret[1] = HelperJson.returnCodes("FAIL", "No file", "");
 				}
 			} else {

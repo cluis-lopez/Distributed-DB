@@ -103,7 +103,7 @@ public class Cluster {
 		String[] ret = new String[2];
 		ret[0] = "FAIL"; ret[1] = "";
 		if (myType == DBType.MASTER) {
-			ret[1] = "Invalid opertion. A Master cannot join a cluster as replica";
+			ret[1] = "Invalid operation. A Master cannot join a cluster as replica";
 			return ret;
 		}
 		//Check first if replica is not already in the alive structure
@@ -157,6 +157,35 @@ public class Cluster {
 		newReplica.lastReached = System.currentTimeMillis();
 		liveReplicas.add(newReplica);
 		log.log(Level.INFO, "The node " + replicaName +" has joined the cluster");
+		ret[0] = "OK";
+		return ret;
+	}
+	
+	public String[] replicaWantsToLeaveCluster(String replicaName) { // Only used by masters
+		String[] ret = new String[2];
+		ret[0] = "FAIL";
+		ret[1] = "";
+		if (myType == DBType.REPLICA) {
+			ret[1] = "Invalid opertion. A Replica wants to join me, while I'm a replica";
+			return ret;
+		}
+		
+		//Check  if replica is in the alive structure
+		Node replicaToRetire = null;
+		for (Node n: liveReplicas) {
+			if (n.name.equals(replicaName)) {
+				replicaToRetire = n;
+				break;
+			}
+		}
+		if (replicaToRetire == null) {
+			ret[1] = "The replica is not in the cluster";
+			return ret;
+		}
+		
+		replicaToRetire.isLive = false;
+		liveReplicas.remove(replicaToRetire);
+		log.log(Level.INFO, "The node " + replicaName +" has left the cluster");
 		ret[0] = "OK";
 		return ret;
 	}

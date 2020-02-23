@@ -3,6 +3,7 @@ package com.distdb.HTTPDataserver.app;
 import java.util.Map;
 
 import com.distdb.HttpHelpers.HelperJson;
+import com.distdb.dbserver.Database;
 import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbsync.MasterSyncer;
 import com.google.gson.Gson;
@@ -11,7 +12,7 @@ import com.google.gson.JsonSyntaxException;
 
 public class SearchByField extends MiniServlet {
 	
-	public String[] doPost(Map<String, MasterDatabase> dbs, String dbname, String body, MasterSyncer dsync) {
+	public String[] doPost(Map<String, Database> dbs, String dbname, String body, MasterSyncer dsync) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		Datain din = null;

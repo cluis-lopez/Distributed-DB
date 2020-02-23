@@ -13,18 +13,17 @@ public class HelperJson {
 		JsonArray ja = new JsonArray();
 		ja.add(code);
 		ja.add(message);
-		if (payload.length()>0) {
+		if (payload.length() > 0) {
 			JsonElement je = new JsonParser().parse(payload);
 			if (je.isJsonObject())
-				ja.add(je.getAsJsonObject());
+				ja.add(je.getAsJsonObject().toString());
 			if (je.isJsonArray())
-				ja.add(je.getAsJsonArray());
-		}
-		else
+				ja.add(je.getAsJsonArray().toString());
+		} else
 			ja.add("");
 		return ja.toString();
 	}
-	
+
 	public static String[] decodeCodes(String response) {
 		String[] resp = new String[3];
 		JsonElement je = new JsonParser().parse(response);
