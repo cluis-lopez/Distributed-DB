@@ -208,7 +208,11 @@ public class DistServer {
 		int clusterPort;
 		int syncDiskTime;
 		int syncNetTime;
+		int pingTime;
+		int maxTicksDead;
+		
 		String adminRootPath;
+		
 		List<Map<String, String>> nodes;
 		List<Map<String, String>> databases;
 	}

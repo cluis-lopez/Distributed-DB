@@ -59,19 +59,25 @@ public class Cluster {
 		}
 	}
 
+	public void clusterWatchDog() {
+		if (myType == DBType.REPLICA) //WatchDog only implemented in Masters
+			return;
+		
+	}
+
 	public boolean setMaster() {
 		if (myType == DBType.MASTER)
 			return true; // Soy el Master, nada que hacer
-		
+
 		if (declaredNodes.get(DBType.MASTER).size() != 1) {
 			System.err.println("No Master declared or more than one. Single Master is supported only at this release");
 			return false; // Single Master supported at first release
 		}
-	
+
 		myMaster = declaredNodes.get(DBType.MASTER).get(0);
-		
+
 		if (myMaster.fullCheck()[0].equals("OK")) { // Soy una replica chequeo si el Master está operativo. Si no
-															// hay master operativo no puedo trabajar
+													// hay master operativo no puedo trabajar
 			return true;
 		}
 		System.err.println("Cannot set master at " + this.myMaster.name);
@@ -99,21 +105,22 @@ public class Cluster {
 		return ret;
 	}
 
-	public String[] joinMeToCluster() { //Only invoked by replicas
+	public String[] joinMeToCluster() { // Only invoked by replicas
 		String[] ret = new String[2];
-		ret[0] = "FAIL"; ret[1] = "";
+		ret[0] = "FAIL";
+		ret[1] = "";
 		if (myType == DBType.MASTER) {
 			ret[1] = "Invalid operation. A Master cannot join a cluster as replica";
 			return ret;
 		}
-		//Check first if replica is not already in the alive structure
-		for (Node n: liveReplicas) {
+		// Check first if replica is not already in the alive structure
+		for (Node n : liveReplicas) {
 			if (n.name.equals(myName)) {
 				ret[1] = "Something went wrong ... but I'm already in the cluster alive nodes";
 				return ret;
 			}
 		}
-		
+
 		JsonObject jo = new JsonObject();
 		jo.addProperty("user", "");
 		jo.addProperty("token", "");
@@ -134,33 +141,33 @@ public class Cluster {
 			ret[1] = "Invalid opertion. A Replica wants to join me, while I'm a replica";
 			return ret;
 		}
-		
-		//Check first if replica is not already in the alive structure
-		for (Node n: liveReplicas) {
+
+		// Check first if replica is not already in the alive structure
+		for (Node n : liveReplicas) {
 			if (n.name.equals(replicaName)) {
 				ret[1] = "This replica is already in the living replicas structure";
 				return ret;
 			}
 		}
 		Node newReplica = null;
-		for (Node n: declaredNodes.get(DBType.REPLICA)) {
+		for (Node n : declaredNodes.get(DBType.REPLICA)) {
 			if (n.name.equals(replicaName))
 				newReplica = n;
 		}
-		
+
 		if (newReplica == null) {
 			ret[1] = "The node " + replicaName + " does not belong to this cluster";
 			return ret;
 		}
-		
+
 		newReplica.isLive = true;
 		newReplica.lastReached = System.currentTimeMillis();
 		liveReplicas.add(newReplica);
-		log.log(Level.INFO, "The node " + replicaName +" has joined the cluster");
+		log.log(Level.INFO, "The node " + replicaName + " has joined the cluster");
 		ret[0] = "OK";
 		return ret;
 	}
-	
+
 	public String[] replicaWantsToLeaveCluster(String replicaName) { // Only used by masters
 		String[] ret = new String[2];
 		ret[0] = "FAIL";
@@ -169,10 +176,10 @@ public class Cluster {
 			ret[1] = "Invalid opertion. A Replica wants to join me, while I'm a replica";
 			return ret;
 		}
-		
-		//Check  if replica is in the alive structure
+
+		// Check if replica is in the alive structure
 		Node replicaToRetire = null;
-		for (Node n: liveReplicas) {
+		for (Node n : liveReplicas) {
 			if (n.name.equals(replicaName)) {
 				replicaToRetire = n;
 				break;
@@ -182,15 +189,15 @@ public class Cluster {
 			ret[1] = "The replica is not in the cluster";
 			return ret;
 		}
-		
+
 		replicaToRetire.isLive = false;
 		liveReplicas.remove(replicaToRetire);
-		log.log(Level.INFO, "The node " + replicaName +" has left the cluster");
+		log.log(Level.INFO, "The node " + replicaName + " has left the cluster");
 		ret[0] = "OK";
 		return ret;
 	}
-	
+
 	public void clusterInfo() {
-		
+
 	}
 }

@@ -25,12 +25,14 @@ public class Node {
 	public boolean isLive;
 	public long lastReached;
 	public Date lastUpdated;
+	public int ticksSinceLastSeen;
 
 	public Node(Logger log, String name, URL url, DBType dbtype) {
 		this.name = name;
 		this.url = url;
 		this.dbtype = dbtype;
 		this.isLive = false;
+		this.ticksSinceLastSeen = 0;
 	}
 
 	/**
