@@ -10,6 +10,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,7 +25,7 @@ import com.google.gson.JsonSyntaxException;
 
 public class DistServer {
 
-	private Logger log = Logger.getLogger("DistServer");
+	private static final Logger log = Logger.getLogger("DistServer");
 
 	public enum DBType {
 		MASTER, REPLICA
@@ -32,10 +33,10 @@ public class DistServer {
 
 	static Map<String, Database> dbs;
 	static EnumMap<DBType, List<Node>> nodes;
-	static boolean keepRunning = true;
+	private static final AtomicBoolean keepRunning = new AtomicBoolean(true);
 
 	public void kill() {
-		DistServer.keepRunning = false;
+		keepRunning.set(false);
 	}
 
 	public static void main(String[] args) {
@@ -53,7 +54,7 @@ public class DistServer {
 			e1.printStackTrace();
 		}
 
-		// log.setUseParentHandlers(false); // To avoid console logging
+		log.setUseParentHandlers(false); // To avoid console logging
 		log.addHandler(fd);
 		SimpleFormatter formatter = new SimpleFormatter();
 		fd.setFormatter(formatter);
@@ -186,7 +187,7 @@ public class DistServer {
 		log.log(Level.INFO, "Listening at port: " + props.dataPort);
 
 		Socket client = null;
-		while (keepRunning) {
+		while (keepRunning.get()) {
 			try {
 				client = server.accept();
 			} catch (IOException e) {

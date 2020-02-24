@@ -189,4 +189,8 @@ public class Cluster {
 		ret[0] = "OK";
 		return ret;
 	}
+	
+	public void clusterInfo() {
+		
+	}
 }
