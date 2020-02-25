@@ -132,7 +132,7 @@ public class DistServer {
 		ClusterHTTPServer clusterHTTPserver = null;
 
 		if (type == DBType.MASTER)
-			dsync = new MasterSyncer(log, cluster, 1000 * props.syncDiskTime, 1000 * props.syncNetTime);
+			dsync = new MasterSyncer(log, cluster, 1000 * props.syncNetTime);
 
 		// Initialize databases
 		dbs = new HashMap<>();
@@ -206,7 +206,6 @@ public class DistServer {
 		String ThisNode;
 		int dataPort;
 		int clusterPort;
-		int syncDiskTime;
 		int syncNetTime;
 		int pingTime;
 		int maxTicksDead;

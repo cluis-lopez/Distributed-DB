@@ -3,8 +3,9 @@
     "ThisNode": "Master",
     "dataPort": 8080,
     "clusterPort": 8081,
-    "syncDiskTime": 0,
     "syncNetTime": 30,
+    "pingTime": 60,
+    "maxTicksDead": 2,
     "adminRootPath": "etc/root",
     
     "nodes": [

@@ -31,22 +31,15 @@ public class MasterSyncer implements Runnable {
 	public int waitTime;
 	private Cluster cluster;
 	private Logger log;
-	private boolean delayLogs = true;
+	private boolean delayLogs = false;
 	private boolean keepRunning;
 
-	public MasterSyncer(Logger log, Cluster cluster, int syncDiskTime, int syncNetTime) {
+	public MasterSyncer(Logger log, Cluster cluster, int syncNetTime) {
 		this.log = log;
 		this.cluster = cluster;
 		dbQueue = new HashMap<>();
 		dataPaths = new HashMap<>();
-		this.waitTime = syncDiskTime;
-		if (syncDiskTime == 0) {
-			this.delayLogs = false; 
-			this.waitTime = syncNetTime;
-		} else {
-			if (syncDiskTime <= syncNetTime)
-				this.waitTime = syncNetTime;
-		}
+		this.waitTime = syncNetTime;
 		
 		this.keepRunning = true;
 	}
