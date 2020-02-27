@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,8 +32,7 @@ public class MasterSyncer implements Runnable {
 	public int waitTime;
 	private Cluster cluster;
 	private Logger log;
-	private boolean delayLogs = false;
-	private boolean keepRunning;
+	private AtomicBoolean keepRunning;
 
 	public MasterSyncer(Logger log, Cluster cluster, int syncNetTime) {
 		this.log = log;
@@ -40,8 +40,8 @@ public class MasterSyncer implements Runnable {
 		dbQueue = new HashMap<>();
 		dataPaths = new HashMap<>();
 		this.waitTime = syncNetTime;
-		
-		this.keepRunning = true;
+
+		this.keepRunning.set(true);;
 	}
 
 	public void addDatabase(String database, Map<String, DBObject> objetos, String dataPath) {
@@ -49,35 +49,33 @@ public class MasterSyncer implements Runnable {
 		dbQueue.put(database, queue);
 		dataPaths.put(database, dataPath);
 	}
+	
+	public void removeDatabase(String database){
+		dbQueue.remove(database);
+		dataPaths.remove(database);
+	}
 
-	public void enQueue(String operation, String database, String objectName, String id, Object o) {
-		if (delayLogs) //Logs are maintained in-mem until disk waitTime expires and then, recorded to a logging file
-			dbQueue.get(database).add(new LoggedOps(operation, objectName, id, o));
-		else {
-			// We should add the new operation to the logging file immediately
-			String loggingFile = dataPaths.get(database) + "/" + database + "_logging";
-			LoggedOps op = new LoggedOps(operation, objectName, id, o);
-			List<LoggedOps> l = new ArrayList<>();
-			l.add(op);
-			appendJson(loggingFile, l);
-		}
+	public synchronized void enQueue(String operation, String database, String objectName, String id, Object o) {
+		// Log the operation in the queue list for net syncing
+		dbQueue.get(database).add(new LoggedOps(operation, objectName, id, o));
+		// Then add the new operation to the logging file immediately
+		String loggingFile = dataPaths.get(database) + "/" + database + "_logging";
+		LoggedOps op = new LoggedOps(operation, objectName, id, o);
+		appendJson(loggingFile, op);
+
 	}
 
 	public void kill() {
-		this.keepRunning = false;
+		this.keepRunning.set(false);
 	}
 
 	@Override
 	public void run() {
 		log.log(Level.INFO, "Starting the disk syncer daemon");
-		log.log(Level.INFO, "Syncing replicas every " + waitTime/1000 + " seconds");
-		if (delayLogs)
-			log.log(Level.INFO, "Syncing to Disk every " + waitTime/1000 + " seconds");
-		else
-			log.log(Level.INFO, "Syncing to disk each log as it happens. No delays");
-		
-		while (keepRunning) {
-			diskLog();
+		log.log(Level.INFO, "Syncing replicas every " + waitTime / 1000 + " seconds");
+		log.log(Level.INFO, "Syncing to disk each log as it happens. No delays");
+
+		while (keepRunning.get()) {
 			netSync();
 			try {
 				Thread.sleep(waitTime);
@@ -104,7 +102,7 @@ public class MasterSyncer implements Runnable {
 					if (l.op.equals("remove"))
 						nRemoves++;
 				}
-			} catch (JsonIOException | JsonSyntaxException |IOException e) {
+			} catch (JsonIOException | JsonSyntaxException | IOException e) {
 				System.err.println("No puedo accer al fichero de log, quizá no existe");
 				log.log(Level.INFO, "Cannot read the log file. Maybe it's not there");
 				log.log(Level.SEVERE, e.getMessage());
@@ -116,37 +114,29 @@ public class MasterSyncer implements Runnable {
 		return ret;
 	}
 
-	public void diskLog() {
-		if (! delayLogs) // All logs saved to disk in logging file. No need to update
+	public void netSync() {
+		if (cluster.liveReplicas.isEmpty()) // Nothing to do if there're no replicas to sync
 			return;
-		
-		for (String s : dbQueue.keySet()) {
-			if (dbQueue.get(s).isEmpty())
-				continue;
-			log.log(Level.INFO, "Logging " + dbQueue.get(s).size() + "  delayed operations for Database " + s);
-			String logginFile = dataPaths.get(s) + "/" + s + "_logging";
-			if (!appendJson(logginFile, dbQueue.get(s))) {
-				log.log(Level.WARNING, "Cannot update log file");
-				System.err.println("No se puede actualizar el fichero de log para la base de datos " + s);
-			} else {
-				dbQueue.get(s).clear(); // Se vacia la pila de log correspondiente a la BBDD
-			}
-			log.log(Level.INFO, "Logged  operations for Database " + s);
-		}
-	}
-	
-	private void netSync() {
-		if (cluster.liveReplicas.isEmpty())
-			return;
-		for (String s : dbQueue.keySet()) {
-			if (dbQueue.get(s).isEmpty())
-				continue;
-			for (Node n: cluster.liveReplicas) {
-				updateNode(s, n, dbQueue.get(s));
+		long oldestUpdate = System.currentTimeMillis();
+		for (Node n : cluster.liveReplicas) { // Let's update each replica
+			// cluster.liveReplicas.subList(0, 5).clear(); how to remove several list
+			// entries
+			if (n.lastUpdated < oldestUpdate)
+				oldestUpdate = n.lastUpdated;
+			for (String s : dbQueue.keySet()) {
+				List<LoggedOps> tempList = new ArrayList<>();
+				if (dbQueue.get(s).isEmpty())
+					continue;
+				for (int i = dbQueue.get(s).size(); i>=0; i--)
+					if ()
+						tempList.add(o);
+					 
+				updateNode(s, n, tempList);
 			}
 		}
 	}
-	
+
+
 	private void updateNode(String dbName, Node n, List<LoggedOps> ops) {
 		Gson json = new Gson();
 		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
@@ -161,13 +151,41 @@ public class MasterSyncer implements Runnable {
 		return ret;
 	}
 
-	private boolean appendJson(String loggingFile, List<LoggedOps> objectToAppend) {
+	private boolean appendJson(String loggingFile, LoggedOps objectToAppend) {
+		boolean ret = false;
+		Gson jsonWrite = new GsonBuilder().setPrettyPrinting().create();
+		java.lang.reflect.Type dataType = TypeToken.getParameterized(LoggedOps.class).getType();
+		dataType = new TypeToken<List<LoggedOps>>() {
+		}.getType();
+		File f = new File(loggingFile);
+		String temp = jsonWrite.toJson(objectToAppend, dataType);
+		try {
+			if (f.exists()) {
+				RandomAccessFile fr = new RandomAccessFile(f, "rw"); // The log file already exists
+				fr.seek(f.length() - 2); // Nos posicionamos antes del último corchete
+				fr.write((",\n" + temp.substring(2, temp.length() - 1) + "\n]").getBytes());
+				fr.close();
+			} else {
+				FileWriter fw = new FileWriter(f);
+				fw.write(temp);
+				fw.close();
+			}
+			ret = true;
+		} catch (IOException e) {
+			System.err.println("Problemas al escribir el log");
+			log.log(Level.WARNING, "Problems when updating or creating database log at " + loggingFile);
+		}
+		return ret;
+	}
+
+	private boolean appendBulkJson(String loggingFile, List<LoggedOps> objectsToAppend) {
 		boolean ret = false;
 		Gson jsonWrite = new GsonBuilder().setPrettyPrinting().create();
 		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
-		dataType =  new TypeToken<List<LoggedOps>>() {}.getType();
+		dataType = new TypeToken<List<LoggedOps>>() {
+		}.getType();
 		File f = new File(loggingFile);
-		String temp = jsonWrite.toJson(objectToAppend, dataType);
+		String temp = jsonWrite.toJson(objectsToAppend, dataType);
 		try {
 			if (f.exists()) {
 				RandomAccessFile fr = new RandomAccessFile(f, "rw"); // The log file already exists

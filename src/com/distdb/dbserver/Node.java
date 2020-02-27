@@ -24,7 +24,7 @@ public class Node {
 	public DBType dbtype;
 	public boolean isLive;
 	public long lastReached;
-	public Date lastUpdated;
+	public long lastUpdated;
 	public int ticksSinceLastSeen;
 
 	public Node(Logger log, String name, URL url, DBType dbtype) {

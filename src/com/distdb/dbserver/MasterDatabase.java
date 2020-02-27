@@ -128,7 +128,8 @@ public class MasterDatabase extends Database {
 		log.log(Level.INFO, "Closing database: " + dbname);
 
 		if (ret[0].equals("OK")) { // All objects were cleanly closed (saved on disk files)
-			dSyncer.diskLog();
+			if (!dSyncer.dbQueue.get(dbname).isEmpty()) //Quedan elementos en la cola de log no replicados
+				dSyncer.netSync();
 			dSyncer.dbQueue.remove(dbname);
 			Path path = Paths.get(dataPath + "/" + dbname + "_logging");
 			if (Files.isRegularFile(path)) {
