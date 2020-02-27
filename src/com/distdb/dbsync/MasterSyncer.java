@@ -27,7 +27,7 @@ import com.google.gson.reflect.TypeToken;
 
 public class MasterSyncer implements Runnable {
 
-	public Map<String, List<LoggedOps>> dbQueue;
+	public List<LoggedOps> logOps;
 	public Map<String, String> dataPaths;
 	public int waitTime;
 	private Cluster cluster;
@@ -37,31 +37,28 @@ public class MasterSyncer implements Runnable {
 	public MasterSyncer(Logger log, Cluster cluster, int syncNetTime) {
 		this.log = log;
 		this.cluster = cluster;
-		dbQueue = new HashMap<>();
+		logOps = new ArrayList<>();
 		dataPaths = new HashMap<>();
 		this.waitTime = syncNetTime;
 
 		this.keepRunning.set(true);;
 	}
 
-	public void addDatabase(String database, Map<String, DBObject> objetos, String dataPath) {
-		List<LoggedOps> queue = new ArrayList<>();
-		dbQueue.put(database, queue);
+	public void addDatabase(String database,  String dataPath) {
 		dataPaths.put(database, dataPath);
 	}
 	
 	public void removeDatabase(String database){
-		dbQueue.remove(database);
 		dataPaths.remove(database);
 	}
 
 	public synchronized void enQueue(String operation, String database, String objectName, String id, Object o) {
-		// Log the operation in the queue list for net syncing
-		dbQueue.get(database).add(new LoggedOps(operation, objectName, id, o));
-		// Then add the new operation to the logging file immediately
+		// Inmediately record the log on disk
 		String loggingFile = dataPaths.get(database) + "/" + database + "_logging";
-		LoggedOps op = new LoggedOps(operation, objectName, id, o);
+		LoggedOps op = new LoggedOps(database, operation, objectName, id, o);
 		appendJson(loggingFile, op);
+		// Then ... include the log inot the mem structure for later net syncing
+		logOps.add(op);
 
 	}
 
@@ -84,71 +81,33 @@ public class MasterSyncer implements Runnable {
 		}
 	}
 
-	public Map<String, String> getInfoFromLogFiles() {
-		Map<String, String> ret = new HashMap<>();
-		for (String s : dbQueue.keySet()) {
-			String dataPath = dataPaths.get(s);
-			java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
-			Gson json = new Gson();
-			int nInserts = 0;
-			int nRemoves = 0;
-			try {
-				FileReader fr = new FileReader(dataPath + "/" + s + "_logging");
-				List<LoggedOps> logged = json.fromJson(fr, dataType);
-				fr.close();
-				for (LoggedOps l : logged) {
-					if (l.op.equals("insert"))
-						nInserts++;
-					if (l.op.equals("remove"))
-						nRemoves++;
-				}
-			} catch (JsonIOException | JsonSyntaxException | IOException e) {
-				System.err.println("No puedo accer al fichero de log, quizá no existe");
-				log.log(Level.INFO, "Cannot read the log file. Maybe it's not there");
-				log.log(Level.SEVERE, e.getMessage());
-				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
-			}
-			ret.put("Pending inserts for " + s, Integer.toString(nInserts));
-			ret.put("Pending removes for " + s, Integer.toString(nRemoves));
-		}
-		return ret;
-	}
-
 	public void netSync() {
 		if (cluster.liveReplicas.isEmpty()) // Nothing to do if there're no replicas to sync
 			return;
 		long oldestUpdate = System.currentTimeMillis();
+		int smallerIndex = 0;
 		for (Node n : cluster.liveReplicas) { // Let's update each replica
 			// cluster.liveReplicas.subList(0, 5).clear(); how to remove several list
 			// entries
+			List<LoggedOps> tempList = new ArrayList<>();
 			if (n.lastUpdated < oldestUpdate)
 				oldestUpdate = n.lastUpdated;
-			for (String s : dbQueue.keySet()) {
-				List<LoggedOps> tempList = new ArrayList<>();
-				if (dbQueue.get(s).isEmpty())
-					continue;
-				for (int i = dbQueue.get(s).size(); i>=0; i--)
-					if ()
-						tempList.add(o);
-					 
-				updateNode(s, n, tempList);
+			for (int i = 0; i<logOps.size(); i++) //Recorremos la lista de operaciones pendientes
+					 if (logOps.get(i).timeStamp< n.lastUpdated)
+						 smallerIndex = i;
+					 else
+						 tempList.add(logOps.get(i));
+			
+				updateNode(n, tempList);
 			}
-		}
+		cluster.liveReplicas.subList(0, smallerIndex).clear(); //Trim the delayed ops list
 	}
 
 
-	private void updateNode(String dbName, Node n, List<LoggedOps> ops) {
+	private void updateNode(Node n, List<LoggedOps> ops) {
 		Gson json = new Gson();
 		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
-		String ret = HTTPDataMovers.postData(log, n.url, dbName, "sendUpdate", json.toJson(ops, dataType));
-	}
-
-	private boolean isEmpty() {
-		boolean ret = true;
-		for (String s : dbQueue.keySet()) {
-			ret = ret && dbQueue.get(s).isEmpty();
-		}
-		return ret;
+		String ret = HTTPDataMovers.postData(log, n.url, "sendUpdate", json.toJson(ops, dataType));
 	}
 
 	private boolean appendJson(String loggingFile, LoggedOps objectToAppend) {
@@ -207,13 +166,15 @@ public class MasterSyncer implements Runnable {
 
 	public class LoggedOps {
 		public long timeStamp;
+		public String database;
 		public String op;
 		public String objectName;
 		public String id;
 		public Object o;
 
-		public LoggedOps(String operation, String objectName, String id, Object o) {
+		public LoggedOps(String database, String operation, String objectName, String id, Object o) {
 			this.timeStamp = System.currentTimeMillis();
+			this.database = database;
 			this.op = operation;
 			this.objectName = objectName;
 			this.id = id;
