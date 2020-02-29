@@ -1,28 +1,23 @@
 package com.distdb.dbsync;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.distdb.HttpHelpers.HTTPDataMovers;
 import com.distdb.dbserver.Cluster;
-import com.distdb.dbserver.DBObject;
 import com.distdb.dbserver.Node;
-import com.distdb.dbsync.MasterSyncer.LoggedOps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 public class MasterSyncer implements Runnable {
@@ -32,7 +27,7 @@ public class MasterSyncer implements Runnable {
 	public int waitTime;
 	private Cluster cluster;
 	private Logger log;
-	private AtomicBoolean keepRunning;
+	private boolean keepRunning;
 
 	public MasterSyncer(Logger log, Cluster cluster, int syncNetTime) {
 		this.log = log;
@@ -41,29 +36,29 @@ public class MasterSyncer implements Runnable {
 		dataPaths = new HashMap<>();
 		this.waitTime = syncNetTime;
 
-		this.keepRunning.set(true);;
+		keepRunning = true;
 	}
 
-	public void addDatabase(String database,  String dataPath) {
+	public void addDatabase(String database, String dataPath) {
 		dataPaths.put(database, dataPath);
 	}
-	
-	public void removeDatabase(String database){
+
+	public void removeDatabase(String database) {
 		dataPaths.remove(database);
 	}
 
-	public synchronized void enQueue(String operation, String database, String objectName, String id, Object o) {
+	public void enQueue(String operation, String database, String objectName, String id, Object o) {
 		// Inmediately record the log on disk
 		String loggingFile = dataPaths.get(database) + "/" + database + "_logging";
 		LoggedOps op = new LoggedOps(database, operation, objectName, id, o);
 		appendJson(loggingFile, op);
-		// Then ... include the log inot the mem structure for later net syncing
+		// Then ... include the log into the mem structure for later net syncing
 		logOps.add(op);
 
 	}
 
 	public void kill() {
-		this.keepRunning.set(false);
+		keepRunning = false;
 	}
 
 	@Override
@@ -72,7 +67,8 @@ public class MasterSyncer implements Runnable {
 		log.log(Level.INFO, "Syncing replicas every " + waitTime / 1000 + " seconds");
 		log.log(Level.INFO, "Syncing to disk each log as it happens. No delays");
 
-		while (keepRunning.get()) {
+		while (keepRunning) {
+			log.log(Level.INFO, "Sending logging updates to replicas");
 			netSync();
 			try {
 				Thread.sleep(waitTime);
@@ -82,42 +78,51 @@ public class MasterSyncer implements Runnable {
 	}
 
 	public void netSync() {
-		if (cluster.liveReplicas.isEmpty()) // Nothing to do if there're no replicas to sync
+		if (cluster.liveReplicas.isEmpty()) { // Nothing to do if there're no replicas to sync
+			log.log(Level.INFO, "No replicas to sync");
 			return;
+		}
 		long oldestUpdate = System.currentTimeMillis();
 		int smallerIndex = 0;
 		for (Node n : cluster.liveReplicas) { // Let's update each replica
 			// cluster.liveReplicas.subList(0, 5).clear(); how to remove several list
 			// entries
+			log.log(Level.INFO, "Updating replica: " + n.name);
 			List<LoggedOps> tempList = new ArrayList<>();
 			if (n.lastUpdated < oldestUpdate)
 				oldestUpdate = n.lastUpdated;
-			for (int i = 0; i<logOps.size(); i++) //Recorremos la lista de operaciones pendientes
-					 if (logOps.get(i).timeStamp< n.lastUpdated)
-						 smallerIndex = i;
-					 else
-						 tempList.add(logOps.get(i));
-			
+			for (int i = 0; i < logOps.size(); i++) // Recorremos la lista de operaciones pendientes
+				if (logOps.get(i).timeStamp < n.lastUpdated)
+					smallerIndex = i;
+				else
+					tempList.add(logOps.get(i));
+			if (!tempList.isEmpty()) {
+				log.log(Level.INFO, "Sending replica " + n.name + " " + tempList.size() + " logged operations");
 				updateNode(n, tempList);
 			}
-		cluster.liveReplicas.subList(0, smallerIndex).clear(); //Trim the delayed ops list
+		}
+		cluster.liveReplicas.subList(0, smallerIndex).clear(); // Trim the delayed ops list
 	}
-
 
 	private void updateNode(Node n, List<LoggedOps> ops) {
 		Gson json = new Gson();
-		java.lang.reflect.Type dataType = TypeToken.getParameterized(List.class, LoggedOps.class).getType();
-		String ret = HTTPDataMovers.postData(log, n.url, "sendUpdate", json.toJson(ops, dataType));
+		java.lang.reflect.Type dataType = new TypeToken <List<LoggedOps>> () {}.getType();
+		JsonObject jo = new JsonObject();
+		jo.addProperty("user", "");
+		jo.addProperty("token", "");
+		jo.addProperty("logOps", json.toJson(ops, dataType));
+		log.log(Level.INFO, "Sending : " + jo.toString() + " updates to: " + n.url);
+		String ret = HTTPDataMovers.postData(log, n.url, "", "sendUpdate", jo.toString());
 	}
 
 	private boolean appendJson(String loggingFile, LoggedOps objectToAppend) {
 		boolean ret = false;
 		Gson jsonWrite = new GsonBuilder().setPrettyPrinting().create();
-		java.lang.reflect.Type dataType = TypeToken.getParameterized(LoggedOps.class).getType();
-		dataType = new TypeToken<List<LoggedOps>>() {
-		}.getType();
+		java.lang.reflect.Type dataType = new TypeToken <List<LoggedOps>> () {}.getType();
 		File f = new File(loggingFile);
-		String temp = jsonWrite.toJson(objectToAppend, dataType);
+		List<LoggedOps> tempList = new ArrayList<>();
+		tempList.add(objectToAppend);
+		String temp = jsonWrite.toJson(tempList, dataType);
 		try {
 			if (f.exists()) {
 				RandomAccessFile fr = new RandomAccessFile(f, "rw"); // The log file already exists

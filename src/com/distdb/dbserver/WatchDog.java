@@ -42,7 +42,15 @@ public class WatchDog implements Runnable {
 					if (liveReplicas.contains(n)) { // The replica that does not answer is part of the cluster
 						n.ticksSinceLastSeen++;
 						if (n.ticksSinceLastSeen > maxTicksDead) {
-							// Take this node out of the cluster
+							//Remove this database from the liveReplicas list
+							for (int i = 0; i<liveReplicas.size(); i++) {
+								if (liveReplicas.get(i).name.equals(n.name)) {
+									
+										log.log(Level.INFO, "Replica "+n.name+" is now removed from the cluster");
+										liveReplicas.remove(i);
+							}
+									
+							}
 						}
 					}
 				}

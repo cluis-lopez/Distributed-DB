@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,9 +23,12 @@ import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.DBObject;
 import com.distdb.dbserver.Database;
 import com.distdb.dbserver.DistServer.DBType;
+import com.distdb.dbsync.MasterSyncer.LoggedOps;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 
 public class ClusterHTTPRequest implements Runnable {
 
@@ -128,6 +132,10 @@ public class ClusterHTTPRequest implements Runnable {
 				ret = leaveCluster(body);
 				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
 						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
+			} else if (res[1].equals("sendUpdate")) {
+				ret = getUpdate(body);
+				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
+						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 			} else
 				resp = "HTTP/1.1 400 Bad Request (Unknown Operation)" + newLine + newLine;
 
@@ -140,10 +148,6 @@ public class ClusterHTTPRequest implements Runnable {
 						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 			} else if (operation.equals("getLoggingFile")) { // From Replica: Master must send logfile
 				ret = sendLoggingFile(dbname, body);
-				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
-						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
-			} else if (operation.equals("sendUpdate")) { // From Master. Replica must accept logging operations
-				ret = getUpdate(dbname, body);
 				resp = "HTTP/1.1 200 OK" + newLine + "Content-Type: " + ret[0] + newLine + "Date: " + new Date()
 						+ newLine + "Content-length: " + ret[1].length() + newLine + newLine + ret[1];
 			} else {
@@ -199,7 +203,7 @@ public class ClusterHTTPRequest implements Runnable {
 		}
 		return ret;
 	}
-	
+
 	private String[] leaveCluster(String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
@@ -221,7 +225,7 @@ public class ClusterHTTPRequest implements Runnable {
 			}
 		} else
 			ret[1] = HelperJson.returnCodes("FAIL", "Malformed Json request", "");
-		
+
 		return ret;
 	}
 
@@ -309,7 +313,7 @@ public class ClusterHTTPRequest implements Runnable {
 		return ret;
 	}
 
-	private String[] getUpdate(String dbName, String body) {
+	private String[] getUpdate(String body) {
 		String[] ret = new String[2];
 		ret[0] = "application/json";
 		JsonElement je = new JsonParser().parse(body);
@@ -323,8 +327,21 @@ public class ClusterHTTPRequest implements Runnable {
 			String user = jo.get("user").getAsString();
 			String token = jo.get("token").getAsString();
 			if (user.equals(jo.get("user").getAsString())) { // True by now. Reserved for authentication
-
-				// This replica has got a new logging that must update database
+				System.out.println("He recibido: " + jo.get("logOps"));
+				String temp = jo.get("logOps").getAsString();
+				java.lang.reflect.Type dataType = new TypeToken<List<LoggedOps>>() {
+				}.getType();
+				List<LoggedOps> tempList = new Gson().fromJson(temp, dataType);
+				if (!tempList.isEmpty()) {
+					for (LoggedOps lo : tempList) { // Iterate through the LoggedOps array
+						if (lo.op.equals("insert"))
+							dbs.get(lo.database).insert(lo.objectName, lo.o);
+						if (lo.op.equals("remove"))
+							dbs.get(lo.database).remove(lo.objectName, lo.id);
+					}
+					ret[1] = HelperJson.returnCodes("OK", "Replica updated with "+tempList.size()+" operations", "");
+				} else
+					ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json pyload. Expected a List of Logged Ops", "");
 			}
 		}
 

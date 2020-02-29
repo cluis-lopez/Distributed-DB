@@ -54,7 +54,7 @@ public class DistServer {
 			e1.printStackTrace();
 		}
 
-		log.setUseParentHandlers(false); // To avoid console logging
+		//log.setUseParentHandlers(false); // To avoid console logging
 		log.addHandler(fd);
 		SimpleFormatter formatter = new SimpleFormatter();
 		fd.setFormatter(formatter);
@@ -151,11 +151,12 @@ public class DistServer {
 		}
 		
 		// Initialize the cluster HTTP Server
-				clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster, dbs);
+		clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster, dbs);
 
 		// Start Syncer thread
 
 		if (type == DBType.MASTER && dsync != null) {
+			System.err.println("Starting the Syncer thread");
 			Thread dSync = new Thread(dsync);
 			dSync.setName("Master Syncer");
 			dSync.start();

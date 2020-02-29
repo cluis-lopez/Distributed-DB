@@ -104,7 +104,7 @@ public class MasterDatabase extends Database {
 				
 		}
 
-		dSyncer.addDatabase(dbname, dbobjs, dataPath + "/");
+		dSyncer.addDatabase(dbname, dataPath + "/");
 		props.isProperlyShutdown = false;
 		updateProps();
 		return ret;
@@ -128,9 +128,9 @@ public class MasterDatabase extends Database {
 		log.log(Level.INFO, "Closing database: " + dbname);
 
 		if (ret[0].equals("OK")) { // All objects were cleanly closed (saved on disk files)
-			if (!dSyncer.dbQueue.get(dbname).isEmpty()) //Quedan elementos en la cola de log no replicados
+			if (!dSyncer.logOps.isEmpty()) //Quedan elementos en la cola de log no replicados
 				dSyncer.netSync();
-			dSyncer.dbQueue.remove(dbname);
+			dSyncer.logOps.clear();
 			Path path = Paths.get(dataPath + "/" + dbname + "_logging");
 			if (Files.isRegularFile(path)) {
 				try {
