@@ -54,6 +54,8 @@ public abstract class Database {
 	public abstract String[] close();
 	public abstract String[] insert(String objectName, Object object, boolean logging);
 	public abstract String[] remove(String objectName, String id, boolean logging);
+	public abstract String[] replicaUpdateInsert(String objectName, Object object);
+	public abstract String[] replicaUpdateRemove(String objectName, String id);
 	public abstract String[] getMasterInfo();
 	
 	public String[] insert(String objectName, Object o) {

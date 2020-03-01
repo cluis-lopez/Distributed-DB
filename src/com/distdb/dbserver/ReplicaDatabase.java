@@ -2,6 +2,7 @@ package com.distdb.dbserver;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -61,7 +62,7 @@ public class ReplicaDatabase extends Database {
 			log.log(Level.WARNING, "No datafiles loaded ... maybe the masdter database was never cleanly closed");
 		else if (numDatafiles == props.objects.size())
 			log.log(Level.INFO, "All Datafiles successfully loaded");
-		else { // Error esdta BBDD no se puede cargar
+		else { // Error esta BBDD no se puede cargar
 			ret[0] = "FAIL";
 			ret[1] = "Cannot load " + dbname;
 			return ret;
@@ -75,19 +76,17 @@ public class ReplicaDatabase extends Database {
 			// Decode return logs
 			try {
 				JsonArray array = new JsonParser().parse(logs).getAsJsonArray();
-				if (array.get(0).getAsString().equals("OK")) {
-					for (JsonElement jsonElement : array.get(2).getAsJsonArray()) {
-						JsonObject jobj = new JsonParser().parse(jsonElement.toString()).getAsJsonObject();
-						if ((jobj.get("op").getAsString()).equals("insert")) {
-							Class<?> cl = Class.forName(defPath + "." + jobj.get("objectName").getAsString());
-							Object object = new Gson().fromJson(jobj.get("o"), cl);
-							insert(jobj.get("objectName").getAsString(), object, false);
-						}
-						if ((jobj.get("op").getAsString()).equals("remove"))
-							remove(jobj.get("objectName").getAsString(), jobj.get("id").getAsString(), false);
+				log.log(Level.INFO, "Updating the database file with " + array.size() + " logged operations");
+				for (JsonElement jsonElement : array) {
+					JsonObject jobj = new JsonParser().parse(jsonElement.toString()).getAsJsonObject();
+					log.log(Level.INFO, "Updating " + dbname + " with " + jobj.get("op")+" "+jobj.get("objectName"));
+					if ((jobj.get("op").getAsString()).equals("insert")) {
+						Class<?> cl = Class.forName(defPath + "." + jobj.get("objectName").getAsString());
+						Object object = new Gson().fromJson(jobj.get("o"), cl);
+						replicaUpdateInsert(jobj.get("objectName").getAsString(), object);
 					}
-				} else if (array.get(1).getAsString().equals("No File")) {
-
+					if ((jobj.get("op").getAsString()).equals("remove"))
+						replicaUpdateRemove(jobj.get("objectName").getAsString(), jobj.get("id").getAsString());
 				}
 			} catch (JsonIOException | JsonSyntaxException | ClassNotFoundException e) {
 				System.err.println("No se ha podido aplicar el log a la base de datos " + dbname);
@@ -97,9 +96,12 @@ public class ReplicaDatabase extends Database {
 				ret[1] = "Cannot load " + dbname;
 			}
 		} else {
-			System.err.println("No Logging file. The database was properly shutdown or never used");
 			log.log(Level.INFO, "No Logging file. The database was properly shutdown or never used");
 			ret[1] = "Database " + dbname + " opened without Log";
+		}
+		log.log(Level.INFO, "Replica database " + dbname + " opened with " + dbobjs.size() + " objects");
+		for (String s : dbobjs.keySet()) {
+			log.log(Level.INFO, "Object collection: " + s + " conteins " + dbobjs.get(s).size() + " objects");
 		}
 		return ret;
 	}
@@ -139,6 +141,58 @@ public class ReplicaDatabase extends Database {
 		ret[1] = "Replica Database";
 		return ret;
 	}
+	
+	@Override
+	public String[] replicaUpdateInsert(String objectName, Object object) {
+		String[] ret = new String[3];
+		Class<?> cl = null;
+		try {
+			cl = Class.forName(defPath+"."+objectName);
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		if (!cl.getSimpleName().equals(objectName)) {
+			ret[0] = "FAIL";
+			ret[1] = "Invalid Object";
+			return ret;
+		}
+		
+		Field f = null;
+		String id = null;
+		Object o = null;
+		
+		try {
+			o = object;
+			Class<?> spcl = cl.getSuperclass();
+			f = spcl.getDeclaredField("id");
+			id = (String) f.get(o);
+		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
+			ret[0] = "FAIL";
+			ret[1] = "Something went wrong with the object to insert in the Database";
+			e.printStackTrace();
+			return ret;
+		}
+
+		dbobjs.get(objectName).insert(id, o);
+		
+		ret[0] = "OK";
+		ret[1] = "Inserted new " + objectName + " with id " + id;
+		return ret;
+	}
+	
+	@Override
+	public String[] replicaUpdateRemove(String objectName, String id) {
+		String[] ret = new String[3];
+		ret[0] = "FAIL";
+		ret[1] = "Object does not exist";
+		if (dbobjs.get(objectName).getById(id) != null) {
+			dbobjs.get(objectName).remove(id);
+			ret[0] = "OK";
+			ret[1] = "Removed object with id " + id;
+		}
+		return ret;
+	}
 
 	private boolean askForObject(URL myMaster, Class<?> cl, DBObject dbo) {
 		boolean result = false;
@@ -165,9 +219,11 @@ public class ReplicaDatabase extends Database {
 		String retCodes = HTTPDataMovers.postData(log, myMaster, dbname, "getLoggingFile", jo.toString());
 		String[] codes = HelperJson.decodeCodes(retCodes);
 		if (codes[0].equals("OK"))
-			return codes[3];
-		else
+			return codes[2];
+		else {
+			log.log(Level.INFO, "Asking for log files to master: " + codes[0] + " : " + codes[1]);
 			return "";
+		}
 	}
 
 	protected void updateProps() {

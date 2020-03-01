@@ -12,7 +12,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,12 +22,11 @@ import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.DBObject;
 import com.distdb.dbserver.Database;
 import com.distdb.dbserver.DistServer.DBType;
-import com.distdb.dbsync.MasterSyncer.LoggedOps;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 
 public class ClusterHTTPRequest implements Runnable {
 
@@ -292,7 +290,7 @@ public class ClusterHTTPRequest implements Runnable {
 
 				// Send the Logging file for the requested database
 
-				String loggingFile = dbs.get(dbName).getMasterInfo()[0] + dbName + "_logging";
+				String loggingFile = dbs.get(dbName).getMasterInfo()[0]+ "/" + dbName + "_logging";
 				String content = "";
 				try {
 					content = new String(Files.readAllBytes(Paths.get(loggingFile)));
@@ -302,7 +300,7 @@ public class ClusterHTTPRequest implements Runnable {
 					// log.log(Level.SEVERE, e.getMessage());
 					// log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 					System.err.println("Cannot read & send log file for " + dbName);
-					ret[1] = HelperJson.returnCodes("FAIL", "No file", "");
+					ret[1] = HelperJson.returnCodes("FAIL", "Loggiong file "+loggingFile+" not found", "");
 				}
 			} else {
 				ret[1] = HelperJson.returnCodes("FAIL", "Nor Authorized", "");
@@ -327,24 +325,29 @@ public class ClusterHTTPRequest implements Runnable {
 			String user = jo.get("user").getAsString();
 			String token = jo.get("token").getAsString();
 			if (user.equals(jo.get("user").getAsString())) { // True by now. Reserved for authentication
-				System.out.println("He recibido: " + jo.get("logOps"));
-				String temp = jo.get("logOps").getAsString();
-				java.lang.reflect.Type dataType = new TypeToken<List<LoggedOps>>() {
-				}.getType();
-				List<LoggedOps> tempList = new Gson().fromJson(temp, dataType);
-				if (!tempList.isEmpty()) {
-					for (LoggedOps lo : tempList) { // Iterate through the LoggedOps array
-						if (lo.op.equals("insert"))
-							dbs.get(lo.database).insert(lo.objectName, lo.o);
-						if (lo.op.equals("remove"))
-							dbs.get(lo.database).remove(lo.objectName, lo.id);
+				JsonArray array = new JsonParser().parse(jo.get("logOps").getAsString()).getAsJsonArray();
+				System.err.println("Updating the replica database file with " + array.size() + " logged operations");
+				for (JsonElement jsonElement : array) {
+					JsonObject jobj = new JsonParser().parse(jsonElement.toString()).getAsJsonObject();
+					String dbname = jobj.get("database").getAsString();
+					String defPath = dbs.get(dbname).defPath;
+					System.err.println("Updating " + dbname + " with " + jobj.get("op")+" "+jobj.get("objectName"));
+					if ((jobj.get("op").getAsString()).equals("insert")) {
+						Class<?> cl = null;
+						try {
+							cl = Class.forName(defPath + "." + jobj.get("objectName").getAsString());
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
+						}
+						Object object = new Gson().fromJson(jobj.get("o"), cl);
+						dbs.get(dbname).replicaUpdateInsert(jobj.get("objectName").getAsString(), object);
 					}
-					ret[1] = HelperJson.returnCodes("OK", "Replica updated with "+tempList.size()+" operations", "");
-				} else
-					ret[1] = HelperJson.returnCodes("FAIL", "Invalid Json pyload. Expected a List of Logged Ops", "");
+					if ((jobj.get("op").getAsString()).equals("remove"))
+						dbs.get(dbname).replicaUpdateRemove(jobj.get("objectName").getAsString(), jobj.get("id").getAsString());
+				}
 			}
 		}
-
+		ret[1] = HelperJson.returnCodes("OK", "Updated", "");
 		return ret;
 	}
 }

@@ -317,4 +317,16 @@ public class MasterDatabase extends Database {
 			this.signature = signFile(content);
 		}
 	}
+
+	@Override
+	public String[] replicaUpdateInsert(String objectName, Object object) {
+		// Don't do anything as this should never be invoked
+		return null;
+	}
+
+	@Override
+	public String[] replicaUpdateRemove(String objectName, String id) {
+		// Don't do anything as this should never be invoked
+		return null;
+	}
 }

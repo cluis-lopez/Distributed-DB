@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.distdb.HttpHelpers.HTTPDataMovers;
+import com.distdb.HttpHelpers.HelperJson;
 import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.Node;
 import com.google.gson.Gson;
@@ -101,7 +102,8 @@ public class MasterSyncer implements Runnable {
 				updateNode(n, tempList);
 			}
 		}
-		cluster.liveReplicas.subList(0, smallerIndex).clear(); // Trim the delayed ops list
+		System.err.println("EL indice ahora es: "+ smallerIndex);
+		logOps.subList(0, smallerIndex).clear(); // Trim the delayed ops list
 	}
 
 	private void updateNode(Node n, List<LoggedOps> ops) {
@@ -113,6 +115,11 @@ public class MasterSyncer implements Runnable {
 		jo.addProperty("logOps", json.toJson(ops, dataType));
 		log.log(Level.INFO, "Sending : " + jo.toString() + " updates to: " + n.url);
 		String ret = HTTPDataMovers.postData(log, n.url, "", "sendUpdate", jo.toString());
+		String[] codes = HelperJson.decodeCodes(ret);
+		if (! codes[0].equals("OK"))
+			log.log(Level.WARNING, "Logging to replica "+n.name+" FAILED :"+codes[1]);
+		else
+			n.lastUpdated = System.currentTimeMillis();
 	}
 
 	private boolean appendJson(String loggingFile, LoggedOps objectToAppend) {

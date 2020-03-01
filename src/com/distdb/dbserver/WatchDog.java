@@ -43,6 +43,7 @@ public class WatchDog implements Runnable {
 						n.ticksSinceLastSeen++;
 						if (n.ticksSinceLastSeen > maxTicksDead) {
 							//Remove this database from the liveReplicas list
+							log.log(Level.WARNING, "Replica Database "+n.name+" is nor responding. Removing from cluster");
 							for (int i = 0; i<liveReplicas.size(); i++) {
 								if (liveReplicas.get(i).name.equals(n.name)) {
 									
