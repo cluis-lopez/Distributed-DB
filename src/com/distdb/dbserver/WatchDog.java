@@ -8,6 +8,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.distdb.dbserver.DistServer.DBType;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 public class WatchDog implements Runnable {
 	private Logger log;
@@ -33,6 +35,8 @@ public class WatchDog implements Runnable {
 	@Override
 	public void run() {
 		while (keepRunning.get()) {
+			System.err.println(clusterInfo());
+			
 			for (Node n : declaredNodes.get(DBType.REPLICA)) {
 				if (n.fullCheck()[0].equals("OK")) {
 					n.lastReached = System.currentTimeMillis();
@@ -63,6 +67,23 @@ public class WatchDog implements Runnable {
 			}
 		}
 
+	}
+	
+	public String clusterInfo() {
+		JsonObject jo = new JsonObject();
+		jo.addProperty("Cluster Master", "Deberia ser yo mismo");
+		JsonArray ja = new JsonArray();
+		for (Node n: declaredNodes.get(DBType.REPLICA)) {
+			JsonObject joNode = new JsonObject();
+			joNode.addProperty("Replica Name", n.name);
+			joNode.addProperty("isALive", liveReplicas.contains(n));
+			joNode.addProperty("lastReached", n.lastReached);
+			joNode.addProperty("lastUpdated", n.lastUpdated);
+			joNode.addProperty("ticks since last seen", n.ticksSinceLastSeen);
+			ja.add(joNode);
+		}
+		jo.add("replicas", ja);
+		return jo.toString();
 	}
 
 }

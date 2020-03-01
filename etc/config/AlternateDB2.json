@@ -1,11 +1,10 @@
 {
-    "nodeName": "master1",
-    "ThisNode": "Master",
-    "dataPort": 8080,
-    "clusterPort": 8081,
+    "nodeName": "replica2",
+    "ThisNode": "Replica",
+    "dataPort": 8084,
+    "clusterPort": 8085,
+    "syncDiskTime": 0,
     "syncNetTime": 30,
-    "pingTime": 60,
-    "maxTicksDead": 2,
     "adminRootPath": "etc/root",
     
     "nodes": [

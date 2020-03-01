@@ -66,7 +66,7 @@ class DiskSyncerTest {
 		cluster = new Cluster(log, "master1", nodes, DBType.MASTER);
 		cluster.setMaster();
 		cluster.setReplicas();
-		dSyncer = new MasterSyncer(log, cluster, waitTime, waitTime);
+		dSyncer = new MasterSyncer(log, cluster, waitTime);
 
 		// Borramos las BBDD de Test
 
@@ -99,11 +99,10 @@ class DiskSyncerTest {
 	@Test
 	@Order(1)
 	void testAddDatabase() {
-		dSyncer.addDatabase("TestDB1", db1.dbobjs, db1.dataPath);
-		dSyncer.addDatabase("TestDB2", db2.dbobjs, db2.dataPath);
+		dSyncer.addDatabase("TestDB1", db1.dataPath);
+		dSyncer.addDatabase("TestDB2", db2.dataPath);
 		Assertions.assertEquals(2, dSyncer.dataPaths.size());
-		Assertions.assertEquals(2, dSyncer.dbQueue.size());
-		Assertions.assertEquals(0, dSyncer.dbQueue.get("TestDB1").size());
+		Assertions.assertEquals(0, dSyncer.logOps.size());
 	}
 
 	@SuppressWarnings("deprecation")
@@ -128,6 +127,7 @@ class DiskSyncerTest {
 		db2.insert("Brands", b2);
 		db2.insert("Cars", c1);
 		db2.insert("Cars", c2);
+		Assertions.assertEquals(7,  dSyncer.logOps.size());
 		Assertions.assertEquals(3, dSyncer.dbQueue.get("TestDB1").size());
 		Assertions.assertEquals(4, dSyncer.dbQueue.get("TestDB2").size());
 

@@ -54,7 +54,7 @@ public class DatabaseTest {
 			e.printStackTrace();
 		}
 
-		dsync = new MasterSyncer(log, null, 30, 30);
+		dsync = new MasterSyncer(log, null, 30);
 		db = new MasterDatabase(log, "TestDB1", "TestDB1.json", "com.distdb.TestDB1", dsync);
 		u1 = new User("clopez", "clopez@gmail.com", "1234");
 		u2 = new User("mariano", "mrajoy@hotmail.com", "1234");

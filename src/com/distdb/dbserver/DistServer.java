@@ -113,6 +113,8 @@ public class DistServer {
 				for (Node n : cluster.liveReplicas)
 					System.err.println(n.name);
 			}
+			//Start the cluster daemon
+			cluster.clusterWatchDog();
 		}
 		
 		// If I'm a replica. Joins the cluster

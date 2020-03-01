@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 
 import com.distdb.HttpHelpers.HTTPDataMovers;
 import com.distdb.dbserver.DistServer.DBType;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -62,7 +63,10 @@ public class Cluster {
 	public void clusterWatchDog() {
 		if (myType == DBType.REPLICA) //WatchDog only implemented in Masters
 			return;
-		
+		WatchDog wd = new WatchDog(log, declaredNodes, liveReplicas, 30000, 2);
+		Thread wdt = new Thread(wd);
+		wdt.setName("Cluster WatchDog");
+		wdt.start();
 	}
 
 	public boolean setMaster() {
@@ -162,6 +166,7 @@ public class Cluster {
 
 		newReplica.isLive = true;
 		newReplica.lastReached = System.currentTimeMillis();
+		newReplica.lastUpdated = System.currentTimeMillis();
 		liveReplicas.add(newReplica);
 		log.log(Level.INFO, "The node " + replicaName + " has joined the cluster");
 		ret[0] = "OK";
@@ -197,7 +202,20 @@ public class Cluster {
 		return ret;
 	}
 
-	public void clusterInfo() {
-
+	public String clusterInfo() {
+		JsonObject jo = new JsonObject();
+		jo.addProperty("Cluster Master", declaredNodes.get(DBType.MASTER).get(0).name);
+		JsonArray ja = new JsonArray();
+		for (Node n: declaredNodes.get(DBType.REPLICA)) {
+			JsonObject joNode = new JsonObject();
+			joNode.addProperty("Replica Name", n.name);
+			joNode.addProperty("isALive", liveReplicas.contains(n));
+			joNode.addProperty("lastReached", n.lastReached);
+			joNode.addProperty("lastUpdated", n.lastUpdated);
+			joNode.addProperty("ticks since last seen", n.ticksSinceLastSeen);
+			ja.add(joNode);
+		}
+		jo.add("replicas", ja);
+		return jo.toString();
 	}
 }

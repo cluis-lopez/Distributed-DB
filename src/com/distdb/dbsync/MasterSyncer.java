@@ -6,8 +6,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,6 +72,7 @@ public class MasterSyncer implements Runnable {
 
 		while (keepRunning) {
 			log.log(Level.INFO, "Sending logging updates to replicas");
+			System.err.println(getNetSyncerInfo());
 			netSync();
 			try {
 				Thread.sleep(waitTime);
@@ -102,13 +105,14 @@ public class MasterSyncer implements Runnable {
 				updateNode(n, tempList);
 			}
 		}
-		System.err.println("EL indice ahora es: "+ smallerIndex);
+		System.err.println("EL indice ahora es: " + smallerIndex);
 		logOps.subList(0, smallerIndex).clear(); // Trim the delayed ops list
 	}
 
 	private void updateNode(Node n, List<LoggedOps> ops) {
 		Gson json = new Gson();
-		java.lang.reflect.Type dataType = new TypeToken <List<LoggedOps>> () {}.getType();
+		java.lang.reflect.Type dataType = new TypeToken<List<LoggedOps>>() {
+		}.getType();
 		JsonObject jo = new JsonObject();
 		jo.addProperty("user", "");
 		jo.addProperty("token", "");
@@ -116,8 +120,8 @@ public class MasterSyncer implements Runnable {
 		log.log(Level.INFO, "Sending : " + jo.toString() + " updates to: " + n.url);
 		String ret = HTTPDataMovers.postData(log, n.url, "", "sendUpdate", jo.toString());
 		String[] codes = HelperJson.decodeCodes(ret);
-		if (! codes[0].equals("OK"))
-			log.log(Level.WARNING, "Logging to replica "+n.name+" FAILED :"+codes[1]);
+		if (!codes[0].equals("OK"))
+			log.log(Level.WARNING, "Logging to replica " + n.name + " FAILED :" + codes[1]);
 		else
 			n.lastUpdated = System.currentTimeMillis();
 	}
@@ -125,7 +129,8 @@ public class MasterSyncer implements Runnable {
 	private boolean appendJson(String loggingFile, LoggedOps objectToAppend) {
 		boolean ret = false;
 		Gson jsonWrite = new GsonBuilder().setPrettyPrinting().create();
-		java.lang.reflect.Type dataType = new TypeToken <List<LoggedOps>> () {}.getType();
+		java.lang.reflect.Type dataType = new TypeToken<List<LoggedOps>>() {
+		}.getType();
 		File f = new File(loggingFile);
 		List<LoggedOps> tempList = new ArrayList<>();
 		tempList.add(objectToAppend);
@@ -174,6 +179,32 @@ public class MasterSyncer implements Runnable {
 			log.log(Level.WARNING, "Problems when updating or creating database log at " + loggingFile);
 		}
 		return ret;
+	}
+
+	public String getNetSyncerInfo() {
+		// Returns information from the netsync mem structuture
+		JsonObject jo = new JsonObject();
+		jo.addProperty("In-Mem pending Ops", logOps.size());
+		Set<String> loggedDBs = new HashSet<>();
+		for (LoggedOps op : logOps)
+			loggedDBs.add(op.database);
+		jo.addProperty("DBs with pending ops", loggedDBs.size());
+		for (String database : loggedDBs) {
+			int cont = 0, inserts = 0, removes = 0;
+			for (LoggedOps op : logOps) {
+				if (op.database.equals(database)) {
+					cont++;
+					if (op.op.equals("insert"))
+						inserts++;
+					if (op.op.equals("remove"))
+						removes++;
+				}
+			}
+			jo.addProperty("In.Mem pending Ops for database " + database, cont);
+			jo.addProperty("In.Mem pending insertions for database " + database, inserts);
+			jo.addProperty("In.Mem pending removals for database " + database, removes);
+		}
+		return jo.toString();
 	}
 
 	public class LoggedOps {
