@@ -1,30 +1,120 @@
-master1 : 2020-03-02 01:19:29 INFO Adding node replica1 as REPLICA
-master1 : 2020-03-02 01:19:29 INFO Adding node replica2 as REPLICA
-master1 : 2020-03-02 01:19:29 INFO master1 : This node acts as MASTER
-master1 : 2020-03-02 01:19:33 INFO Starting WatchDog daemon for cluster maintenance
-master1 : 2020-03-02 01:19:33 INFO Starting disk logger and net syncer
-master1 : 2020-03-02 01:19:33 INFO Starting syncer. Nett syncing each 30 seconds
-master1 : 2020-03-02 01:19:33 INFO Initializing databases
-master1 : 2020-03-02 01:19:33 INFO Initializing database SYS
-master1 : 2020-03-02 01:19:33 INFO Initializing database TestDB1
-master1 : 2020-03-02 01:19:33 INFO Database was not properly shutdown. Recovering from logs, if any
-master1 : 2020-03-02 01:19:33 WARNING Master trying to open non-existant logging file. Double check unless this is the first time you open the database
-master1 : 2020-03-02 01:19:33 INFO Master database TestDB1 opened with 2 objects
-master1 : 2020-03-02 01:19:33 INFO Object collection: User contains 12 objects
-master1 : 2020-03-02 01:19:33 INFO Object collection: Event contains 2 objects
-master1 : 2020-03-02 01:19:33 INFO Initializing database TestDB2
-master1 : 2020-03-02 01:19:33 INFO Database was not properly shutdown. Recovering from logs, if any
-master1 : 2020-03-02 01:19:33 WARNING Master trying to open non-existant logging file. Double check unless this is the first time you open the database
-master1 : 2020-03-02 01:19:33 INFO Master database TestDB2 opened with 2 objects
-master1 : 2020-03-02 01:19:33 INFO Object collection: Cars contains 1 objects
-master1 : 2020-03-02 01:19:33 INFO Object collection: Brands contains 1 objects
-master1 : 2020-03-02 01:19:33 INFO Starting the cluster HTTP server. Listening at 8081
-master1 : 2020-03-02 01:19:33 INFO Starting the disk syncer daemon
-master1 : 2020-03-02 01:19:33 INFO Syncing replicas every 30 seconds
-master1 : 2020-03-02 01:19:33 INFO Syncing to disk each log as it happens. No delays
-master1 : 2020-03-02 01:19:33 INFO Sending logging updates to replicas
-master1 : 2020-03-02 01:19:33 INFO Server started
-master1 : 2020-03-02 01:19:33 INFO Listening at port: 8080
-master1 : 2020-03-02 01:19:33 INFO No replicas to sync
-master1 : 2020-03-02 01:20:03 INFO Sending logging updates to replicas
-master1 : 2020-03-02 01:20:03 INFO No replicas to sync
+master1 : 2020-03-02 21:29:14 INFO Adding node replica1 as REPLICA
+master1 : 2020-03-02 21:29:14 INFO Adding node replica2 as REPLICA
+master1 : 2020-03-02 21:29:14 INFO master1 : This node acts as MASTER
+master1 : 2020-03-02 21:29:16 INFO Connection http://localhost:8083/ping Refused
+master1 : 2020-03-02 21:29:18 INFO Connection http://localhost:8085/ping Refused
+master1 : 2020-03-02 21:29:18 INFO Starting WatchDog daemon for cluster maintenance
+master1 : 2020-03-02 21:29:18 INFO Starting disk logger and net syncer
+master1 : 2020-03-02 21:29:18 INFO Starting syncer. Nett syncing each 30 seconds
+master1 : 2020-03-02 21:29:18 INFO Initializing databases
+master1 : 2020-03-02 21:29:18 INFO Initializing database SYS
+master1 : 2020-03-02 21:29:18 INFO Initializing database TestDB1
+master1 : 2020-03-02 21:29:18 INFO Database was not properly shutdown. Recovering from logs, if any
+master1 : 2020-03-02 21:29:18 WARNING Master trying to open non-existant logging file. Double check unless this is the first time you open the database
+master1 : 2020-03-02 21:29:18 INFO Master database TestDB1 opened with 2 objects
+master1 : 2020-03-02 21:29:18 INFO Object collection: User contains 12 objects
+master1 : 2020-03-02 21:29:18 INFO Object collection: Event contains 2 objects
+master1 : 2020-03-02 21:29:18 INFO Initializing database TestDB2
+master1 : 2020-03-02 21:29:18 INFO Database was not properly shutdown. Recovering from logs, if any
+master1 : 2020-03-02 21:29:18 WARNING Master trying to open non-existant logging file. Double check unless this is the first time you open the database
+master1 : 2020-03-02 21:29:18 INFO Master database TestDB2 opened with 2 objects
+master1 : 2020-03-02 21:29:18 INFO Object collection: Cars contains 1 objects
+master1 : 2020-03-02 21:29:18 INFO Object collection: Brands contains 1 objects
+master1 : 2020-03-02 21:29:18 INFO Starting the disk syncer daemon
+master1 : 2020-03-02 21:29:18 INFO Syncing replicas every 30 seconds
+master1 : 2020-03-02 21:29:18 INFO Server started
+master1 : 2020-03-02 21:29:18 INFO Cluster started
+master1 : 2020-03-02 21:29:18 INFO Syncing to disk each log as it happens. No delays
+master1 : 2020-03-02 21:29:18 INFO Listening at port: 8081
+master1 : 2020-03-02 21:29:18 INFO Listening at port: 8080
+master1 : 2020-03-02 21:29:18 INFO Sending logging updates to replicas
+master1 : 2020-03-02 21:29:18 INFO No replicas to sync
+master1 : 2020-03-02 21:29:20 INFO Connection http://localhost:8083/ping Refused
+master1 : 2020-03-02 21:29:22 INFO Connection http://localhost:8085/ping Refused
+replica1 : 2020-03-02 21:29:24 INFO Adding node master1 as MASTER
+replica1 : 2020-03-02 21:29:24 INFO Adding node replica2 as REPLICA
+replica1 : 2020-03-02 21:29:24 INFO replica1 : This node acts as REPLICA
+master1 : 2020-03-02 21:29:24 INFO The node replica1 has joined the cluster
+replica1 : 2020-03-02 21:29:24 INFO Joined to cluster
+replica1 : 2020-03-02 21:29:24 INFO Starting disk logger and net syncer
+replica1 : 2020-03-02 21:29:24 INFO This node is a replica. Not syncer needed
+replica1 : 2020-03-02 21:29:24 INFO Initializing databases
+replica1 : 2020-03-02 21:29:24 INFO Initializing database SYS
+replica1 : 2020-03-02 21:29:24 INFO Initializing database TestDB1
+replica1 : 2020-03-02 21:29:24 INFO All Datafiles successfully loaded
+replica1 : 2020-03-02 21:29:24 INFO TestDB1: Asking the Master for log files: FAIL : Loggiong file etc/data/TestDB1/TestDB1_logging not found
+replica1 : 2020-03-02 21:29:24 INFO TestDB1: No Logging file. The database was properly shutdown or never used
+replica1 : 2020-03-02 21:29:24 INFO TestDB1: Replica database opened with 2 objects
+replica1 : 2020-03-02 21:29:24 INFO TestDB1: Object collection: User contains 12 objects
+replica1 : 2020-03-02 21:29:24 INFO TestDB1: Object collection: Event contains 2 objects
+replica1 : 2020-03-02 21:29:24 INFO Initializing database TestDB2
+replica1 : 2020-03-02 21:29:24 INFO All Datafiles successfully loaded
+replica1 : 2020-03-02 21:29:24 INFO TestDB2: Asking the Master for log files: FAIL : Loggiong file etc/data/TestDB2/TestDB2_logging not found
+replica1 : 2020-03-02 21:29:24 INFO TestDB2: No Logging file. The database was properly shutdown or never used
+replica1 : 2020-03-02 21:29:24 INFO TestDB2: Replica database opened with 2 objects
+replica1 : 2020-03-02 21:29:24 INFO TestDB2: Object collection: Cars contains 1 objects
+replica1 : 2020-03-02 21:29:24 INFO TestDB2: Object collection: Brands contains 1 objects
+replica1 : 2020-03-02 21:29:24 INFO Server started
+replica1 : 2020-03-02 21:29:24 INFO Listening at port: 8082
+replica1 : 2020-03-02 21:29:24 INFO Cluster started
+replica1 : 2020-03-02 21:29:24 INFO Listening at port: 8083
+replica2 : 2020-03-02 21:29:33 INFO Adding node master1 as MASTER
+replica2 : 2020-03-02 21:29:33 INFO Adding node replica1 as REPLICA
+replica2 : 2020-03-02 21:29:33 INFO replica2 : This node acts as REPLICA
+master1 : 2020-03-02 21:29:33 INFO The node replica2 has joined the cluster
+replica2 : 2020-03-02 21:29:33 INFO Joined to cluster
+replica2 : 2020-03-02 21:29:33 INFO Starting disk logger and net syncer
+replica2 : 2020-03-02 21:29:33 INFO This node is a replica. Not syncer needed
+replica2 : 2020-03-02 21:29:33 INFO Initializing databases
+replica2 : 2020-03-02 21:29:33 INFO Initializing database SYS
+replica2 : 2020-03-02 21:29:33 INFO Initializing database TestDB1
+replica2 : 2020-03-02 21:29:33 INFO All Datafiles successfully loaded
+replica2 : 2020-03-02 21:29:33 INFO TestDB1: Asking the Master for log files: FAIL : Loggiong file etc/data/TestDB1/TestDB1_logging not found
+replica2 : 2020-03-02 21:29:33 INFO TestDB1: No Logging file. The database was properly shutdown or never used
+replica2 : 2020-03-02 21:29:33 INFO TestDB1: Replica database opened with 2 objects
+replica2 : 2020-03-02 21:29:33 INFO TestDB1: Object collection: User contains 12 objects
+replica2 : 2020-03-02 21:29:33 INFO TestDB1: Object collection: Event contains 2 objects
+replica2 : 2020-03-02 21:29:33 INFO Initializing database TestDB2
+replica2 : 2020-03-02 21:29:33 INFO All Datafiles successfully loaded
+replica2 : 2020-03-02 21:29:33 INFO TestDB2: Asking the Master for log files: FAIL : Loggiong file etc/data/TestDB2/TestDB2_logging not found
+replica2 : 2020-03-02 21:29:33 INFO TestDB2: No Logging file. The database was properly shutdown or never used
+replica2 : 2020-03-02 21:29:33 INFO TestDB2: Replica database opened with 2 objects
+replica2 : 2020-03-02 21:29:33 INFO TestDB2: Object collection: Cars contains 1 objects
+replica2 : 2020-03-02 21:29:33 INFO TestDB2: Object collection: Brands contains 1 objects
+replica2 : 2020-03-02 21:29:33 INFO Server started
+replica2 : 2020-03-02 21:29:33 INFO Listening at port: 8084
+replica2 : 2020-03-02 21:29:33 INFO Cluster started
+replica2 : 2020-03-02 21:29:33 INFO Listening at port: 8085
+master1 : 2020-03-02 21:30:56 INFO Adding node replica1 as REPLICA
+master1 : 2020-03-02 21:30:56 INFO Adding node replica2 as REPLICA
+master1 : 2020-03-02 21:30:56 INFO master1 : This node acts as MASTER
+master1 : 2020-03-02 21:30:58 INFO Connection http://localhost:8083/ping Refused
+master1 : 2020-03-02 21:31:00 INFO Connection http://localhost:8085/ping Refused
+master1 : 2020-03-02 21:31:00 INFO Starting WatchDog daemon for cluster maintenance
+master1 : 2020-03-02 21:31:00 INFO Starting disk logger and net syncer
+master1 : 2020-03-02 21:31:00 INFO Starting syncer. Nett syncing each 30 seconds
+master1 : 2020-03-02 21:31:00 INFO Initializing databases
+master1 : 2020-03-02 21:31:00 INFO Initializing database SYS
+master1 : 2020-03-02 21:31:01 INFO Initializing database TestDB1
+master1 : 2020-03-02 21:31:01 INFO Database was not properly shutdown. Recovering from logs, if any
+master1 : 2020-03-02 21:31:01 WARNING Master trying to open non-existant logging file. Double check unless this is the first time you open the database
+master1 : 2020-03-02 21:31:01 INFO Master database TestDB1 opened with 2 objects
+master1 : 2020-03-02 21:31:01 INFO Object collection: User contains 12 objects
+master1 : 2020-03-02 21:31:01 INFO Object collection: Event contains 2 objects
+master1 : 2020-03-02 21:31:01 INFO Initializing database TestDB2
+master1 : 2020-03-02 21:31:01 INFO Database was not properly shutdown. Recovering from logs, if any
+master1 : 2020-03-02 21:31:01 WARNING Master trying to open non-existant logging file. Double check unless this is the first time you open the database
+master1 : 2020-03-02 21:31:01 INFO Master database TestDB2 opened with 2 objects
+master1 : 2020-03-02 21:31:01 INFO Object collection: Cars contains 1 objects
+master1 : 2020-03-02 21:31:01 INFO Object collection: Brands contains 1 objects
+master1 : 2020-03-02 21:31:01 INFO Starting the disk syncer daemon
+master1 : 2020-03-02 21:31:01 INFO Syncing replicas every 30 seconds
+master1 : 2020-03-02 21:31:01 INFO Syncing to disk each log as it happens. No delays
+master1 : 2020-03-02 21:31:01 INFO Cluster started
+master1 : 2020-03-02 21:31:01 INFO Server started
+master1 : 2020-03-02 21:31:01 INFO Listening at port: 8081
+master1 : 2020-03-02 21:31:01 INFO Sending logging updates to replicas
+master1 : 2020-03-02 21:31:01 INFO No replicas to sync
+master1 : 2020-03-02 21:31:01 INFO Listening at port: 8080
+master1 : 2020-03-02 21:31:03 INFO Connection http://localhost:8083/ping Refused
+master1 : 2020-03-02 21:31:05 INFO Connection http://localhost:8085/ping Refused

@@ -7,6 +7,8 @@ import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class HTTPDataMovers {
@@ -51,14 +53,13 @@ public class HTTPDataMovers {
 				ret = code + " : " +con.getResponseMessage();
 			}
 		}catch (SocketTimeoutException e) {
-			System.err.println("HTTP POST Timeout");
+			log.log(Level.INFO, "HTTP POST" + uri + " Timeout");
 		} catch (ConnectException e) {
-			System.err.println("Connection Refused");
+			log.log(Level.INFO, "Connection "  + uri + " Refused");
 		} catch (IOException e) {
-			System.err.println("Error enviando POST a la URI "+ uri);
-			//log.log(Level.WARNING, "cannot send post data to " + uri);
-			//log.log(Level.WARNING, e.getMessage());
-			//log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
+			log.log(Level.WARNING, "cannot send post data to " + uri);
+			log.log(Level.WARNING, e.getMessage());
+			log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
 			System.err.println(e.getMessage());
 			e.printStackTrace();
 		}

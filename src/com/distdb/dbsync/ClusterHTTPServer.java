@@ -19,7 +19,8 @@ public class ClusterHTTPServer implements Runnable {
 	private Cluster cluster;
 	Map<String, Database> dbs;
 
-	public ClusterHTTPServer(int port, Cluster cluster, Map<String, Database> dbs) {
+	public ClusterHTTPServer(Logger log, int port, Cluster cluster, Map<String, Database> dbs) {
+		this.log = log;
 		this.clusterPort = port;
 		this.cluster = cluster;
 		this.dbs = dbs;
@@ -40,8 +41,8 @@ public class ClusterHTTPServer implements Runnable {
 		}
 
 		System.out.println("Arrancando el cluster HTTP Server en el puerto " + clusterPort);
-		//log.log(Level.INFO, "Cluster started");
-		//log.log(Level.INFO, "Listening at port: " + clusterPort);
+		log.log(Level.INFO, "Cluster started");
+		log.log(Level.INFO, "Listening at port: " + clusterPort);
 
 		Socket client = null;
 

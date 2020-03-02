@@ -162,7 +162,7 @@ public class DistServer {
 		}
 
 		// Initialize the cluster HTTP Server
-		clusterHTTPserver = new ClusterHTTPServer(props.clusterPort, cluster, dbs);
+		clusterHTTPserver = new ClusterHTTPServer(log, props.clusterPort, cluster, dbs);
 
 		// Start Syncer thread
 
@@ -174,7 +174,6 @@ public class DistServer {
 		}
 
 		// Start the Cluster HTTP server
-		log.log(Level.INFO, "Starting the cluster HTTP server. Listening at " + props.clusterPort);
 		Thread clusterServer = new Thread(clusterHTTPserver);
 		clusterServer.setName("Cluster HTTP Server");
 		clusterServer.start();

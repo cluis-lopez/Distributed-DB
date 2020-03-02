@@ -72,7 +72,7 @@ public class MasterSyncer implements Runnable {
 
 		while (keepRunning) {
 			log.log(Level.INFO, "Sending logging updates to replicas");
-			System.err.println(getNetSyncerInfo());
+			// System.err.println(getNetSyncerInfo());
 			netSync();
 			try {
 				Thread.sleep(waitTime);
@@ -91,7 +91,6 @@ public class MasterSyncer implements Runnable {
 		for (Node n : cluster.liveReplicas) { // Let's update each replica
 			// cluster.liveReplicas.subList(0, 5).clear(); how to remove several list
 			// entries
-			log.log(Level.INFO, "Updating replica: " + n.name);
 			List<LoggedOps> tempList = new ArrayList<>();
 			if (n.lastUpdated < oldestUpdate)
 				oldestUpdate = n.lastUpdated;
@@ -105,7 +104,7 @@ public class MasterSyncer implements Runnable {
 				updateNode(n, tempList);
 			}
 		}
-		System.err.println("EL indice ahora es: " + smallerIndex);
+		
 		logOps.subList(0, smallerIndex).clear(); // Trim the delayed ops list
 	}
 
@@ -148,7 +147,6 @@ public class MasterSyncer implements Runnable {
 			}
 			ret = true;
 		} catch (IOException e) {
-			System.err.println("Problemas al escribir el log");
 			log.log(Level.WARNING, "Problems when updating or creating database log at " + loggingFile);
 		}
 		return ret;
@@ -175,7 +173,6 @@ public class MasterSyncer implements Runnable {
 			}
 			ret = true;
 		} catch (IOException e) {
-			System.err.println("Problemas al escribir el log");
 			log.log(Level.WARNING, "Problems when updating or creating database log at " + loggingFile);
 		}
 		return ret;

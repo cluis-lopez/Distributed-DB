@@ -95,7 +95,6 @@ public class DataServerAPI implements Runnable {
 			else
 				response = "HTTP/1.1 400 Bad Request (Json payload required)" + newLine + newLine;
 
-			System.out.println(response);
 			pout.print(response);
 			pout.flush();
 			pout.close();

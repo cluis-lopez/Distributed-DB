@@ -1,11 +1,8 @@
 package com.distdb.dbserver;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URL;
-import java.util.Date;
-import java.util.Scanner;
 import java.util.logging.Logger;
 
 import com.distdb.HttpHelpers.HTTPDataMovers;
@@ -33,6 +30,7 @@ public class Node {
 		this.dbtype = dbtype;
 		this.isLive = false;
 		this.ticksSinceLastSeen = 0;
+		this.log = log;
 	}
 
 	/**
@@ -63,19 +61,17 @@ public class Node {
 		if (responseBody.equals(""))
 			return false;
 		if (HelperJson.decodeCodes(responseBody)[0].equals("OK"))
-				return true;;
+				return true;
 		return false;
 	}
 	
 	public String[] fullCheck() {
 		String[] ret = new String[2];
-		System.err.println("Checking if node "+this.name+" is reachable ...");
 		if (! this.isReachable()) {
 			ret[0] = "FAIL"; ret[1] ="Node is not reachable";
 			System.err.println("Node not reachable");
 			return ret;
 		}
-		System.err.println("Checking if the node has DistServer cluster service running at "+ this.url);
 		if (! this.isAlive()) {
 			ret[0] = "FAIL"; ret[1] ="Node has not running cluster service at "+ this.url;
 			return ret;

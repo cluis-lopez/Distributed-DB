@@ -59,13 +59,13 @@ public class ReplicaDatabase extends Database {
 		}
 
 		if (numDatafiles == 0)
-			log.log(Level.WARNING, "No datafiles loaded ... maybe the masdter database was never cleanly closed");
+			log.log(Level.WARNING, dbname + ": No datafiles loaded ... maybe the masdter database was never cleanly closed");
 		else if (numDatafiles == props.objects.size())
 			log.log(Level.INFO, "All Datafiles successfully loaded");
 		else { // Error esta BBDD no se puede cargar
 			ret[0] = "FAIL";
 			ret[1] = "Cannot load " + dbname;
-			log.log(Level.WARNING, "Something is incorrect in the datafile structure for this database and cannot be loaded");
+			log.log(Level.WARNING, dbname + ": Something is incorrect in the datafile structure for this database and cannot be loaded");
 			return ret;
 		}
 
@@ -77,7 +77,7 @@ public class ReplicaDatabase extends Database {
 			// Decode return logs
 			try {
 				JsonArray array = new JsonParser().parse(logs).getAsJsonArray();
-				log.log(Level.INFO, "Updating the replica database with " + array.size() + " logged operations");
+				log.log(Level.INFO, dbname + ": Updating the replica database with " + array.size() + " logged operations");
 				for (JsonElement jsonElement : array) {
 					JsonObject jobj = new JsonParser().parse(jsonElement.toString()).getAsJsonObject();
 					if ((jobj.get("op").getAsString()).equals("insert")) {
@@ -95,12 +95,12 @@ public class ReplicaDatabase extends Database {
 				ret[1] = "Cannot load " + dbname;
 			}
 		} else {
-			log.log(Level.INFO, "No Logging file. The database was properly shutdown or never used");
+			log.log(Level.INFO, dbname + ": No Logging file. The database was properly shutdown or never used");
 			ret[1] = "Database " + dbname + " opened without Log";
 		}
-		log.log(Level.INFO, "Replica database " + dbname + " opened with " + dbobjs.size() + " objects");
+		log.log(Level.INFO, dbname + ": Replica database opened with " + dbobjs.size() + " objects");
 		for (String s : dbobjs.keySet()) {
-			log.log(Level.INFO, "Object collection: " + s + " contains " + dbobjs.get(s).size() + " objects");
+			log.log(Level.INFO, dbname + ": Object collection: " + s + " contains " + dbobjs.get(s).size() + " objects");
 		}
 		return ret;
 	}
@@ -220,7 +220,7 @@ public class ReplicaDatabase extends Database {
 		if (codes[0].equals("OK"))
 			return codes[2];
 		else {
-			log.log(Level.INFO, "Asking the Master for log files: " + codes[0] + " : " + codes[1]);
+			log.log(Level.INFO, dbname + ": Asking the Master for log files: " + codes[0] + " : " + codes[1]);
 			return "";
 		}
 	}
@@ -232,7 +232,7 @@ public class ReplicaDatabase extends Database {
 			fw.write(json.toJson(props, Properties.class));
 			fw.close();
 		} catch (IOException e) {
-			log.log(Level.SEVERE, "Cannot prtoperly update the Properties file for " + dbname);
+			log.log(Level.SEVERE, "Cannot properly update the Properties file for " + dbname);
 			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 		}
 	}

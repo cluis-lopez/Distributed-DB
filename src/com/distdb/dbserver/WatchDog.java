@@ -35,7 +35,6 @@ public class WatchDog implements Runnable {
 	@Override
 	public void run() {
 		while (keepRunning.get()) {
-			System.err.println(clusterInfo());
 			
 			for (Node n : declaredNodes.get(DBType.REPLICA)) {
 				if (n.fullCheck()[0].equals("OK")) {
