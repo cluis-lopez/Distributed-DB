@@ -76,6 +76,7 @@ public class MasterDatabase extends Database {
 			try {
 				FileReader fr = new FileReader(dataPath + "/" + dbname + "_logging");
 				JsonArray array = new JsonParser().parse(fr).getAsJsonArray();
+				log.log(Level.INFO, "Updating the Master database with " + array.size() + " logged operations");
 				for (JsonElement jsonElement : array) {
 					JsonObject jobj = new JsonParser().parse(jsonElement.toString()).getAsJsonObject();
 					if ((jobj.get("op").getAsString()).equals("insert")) {
@@ -97,8 +98,7 @@ public class MasterDatabase extends Database {
 				// El fichero de logging no existe, una de dos ... o es la primera que vez que se accede
 				// y no han habido operaciones de I/O ... o la ultima vez se cerró correctamente
 				//y entonces no deberíamos estar en este punto (isProperlyShutdown == true
-				System.err.println("No existe el fichero de logging");
-				log.log(Level.WARNING, "Master opening non-exixtent logging file. Double check unless this is the first time you open the database");
+				log.log(Level.WARNING, "Master trying to open non-existant logging file. Double check unless this is the first time you open the database");
 				ret[1] = dbname + " WARNING Check if this is the first time you open the database!!";
 			}
 				
@@ -107,6 +107,10 @@ public class MasterDatabase extends Database {
 		dSyncer.addDatabase(dbname, dataPath + "/");
 		props.isProperlyShutdown = false;
 		updateProps();
+		log.log(Level.INFO, "Master database " + dbname + " opened with " + dbobjs.size() + " objects");
+		for (String s : dbobjs.keySet()) {
+			log.log(Level.INFO, "Object collection: " + s + " contains " + dbobjs.get(s).size() + " objects");
+		}
 		return ret;
 	}
 
@@ -124,7 +128,6 @@ public class MasterDatabase extends Database {
 		for (DBObject o : dbobjs.values())
 			o.close();
 		dbobjs = null;
-		System.err.println("Cerrando la base de datos " + dbname);
 		log.log(Level.INFO, "Closing database: " + dbname);
 
 		if (ret[0].equals("OK")) { // All objects were cleanly closed (saved on disk files)
@@ -135,13 +138,13 @@ public class MasterDatabase extends Database {
 			if (Files.isRegularFile(path)) {
 				try {
 					Files.delete(path);
-					log.log(Level.INFO, "Properly removed logging file for database " + dbname);
+					log.log(Level.INFO, "Cleanly removed logging file for database " + dbname);
 					props.isProperlyShutdown = true;
 					props.lastProperlyShutdown = new Date();
 					updateProps();
 					ret[1] = "Database closed";
 				} catch (IOException e) {
-					log.log(Level.SEVERE, "Cannot delete logging for database " + dbname);
+					log.log(Level.SEVERE, "Cannot delete logging file for database " + dbname);
 					log.log(Level.SEVERE, e.getMessage());
 					log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 				}
@@ -173,10 +176,10 @@ public class MasterDatabase extends Database {
 			f = spcl.getDeclaredField("onDisk");
 			f.set(o, !logging);
 		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
-			System.err.println("Algo fue mal con el objeto a insertar");
+			log.log(Level.WARNING, "Something went wrong trying to insert object of class "+cl.getSimpleName()+" into database "+ dbname);
 			ret[0] = "FAIL";
 			ret[1] = "Something went wrong with the object to insert in the Database";
-			e.printStackTrace();
+			log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
 			return ret;
 		}
 
@@ -228,7 +231,6 @@ public class MasterDatabase extends Database {
 			log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
 		} catch (IOException e) {
 			// El fichero de datos no existe, asi que asumimos que hay que crearlo
-			System.err.println("No existe el fichero de datos");
 			log.log(Level.INFO, "Master opening non-exixtent datafile. Assuming new Object collection");
 		}
 		return ret;
@@ -268,7 +270,7 @@ public class MasterDatabase extends Database {
 			fw.write(signature);
 			fw.flush();
 			fw.close();
-			System.err.println("Salvados los ficheros de la colección de objetos " + cl.getName());
+			log.log(Level.INFO, "Object collection" + cl.getName()+ "was cleanly dumnped to disk into file: "+dataFile);
 			ret[0] = "OK";
 			ret[1] = "";
 		} catch (IOException e) {
@@ -301,7 +303,7 @@ public class MasterDatabase extends Database {
 		try {
 			storedSign = ((Signature) new Gson().fromJson(new FileReader(dataFile.replace("_data_", "_signature_")), Signature.class)).signature;
 		} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 		}
 		return (newSign.equals(storedSign));
 	}

@@ -51,7 +51,7 @@ public class WatchDog implements Runnable {
 							for (int i = 0; i<liveReplicas.size(); i++) {
 								if (liveReplicas.get(i).name.equals(n.name)) {
 									
-										log.log(Level.INFO, "Replica "+n.name+" is now removed from the cluster");
+										log.log(Level.WARNING, "Replica "+n.name+" is now removed from the cluster");
 										liveReplicas.remove(i);
 							}
 									
@@ -70,8 +70,6 @@ public class WatchDog implements Runnable {
 	}
 	
 	public String clusterInfo() {
-		JsonObject jo = new JsonObject();
-		jo.addProperty("Cluster Master", "Deberia ser yo mismo");
 		JsonArray ja = new JsonArray();
 		for (Node n: declaredNodes.get(DBType.REPLICA)) {
 			JsonObject joNode = new JsonObject();
@@ -82,8 +80,7 @@ public class WatchDog implements Runnable {
 			joNode.addProperty("ticks since last seen", n.ticksSinceLastSeen);
 			ja.add(joNode);
 		}
-		jo.add("replicas", ja);
-		return jo.toString();
+		return ja.toString();
 	}
 
 }

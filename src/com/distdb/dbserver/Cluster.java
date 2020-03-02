@@ -50,11 +50,11 @@ public class Cluster {
 					temp = DBType.REPLICA;
 
 				Node node = new Node(log, n.get("name"), url, temp);
-				System.err.println("Adding node " + node.name + " as " + node.dbtype);
+				log.log(Level.INFO, "Adding node " + node.name + " as " + node.dbtype);
 				declaredNodes.get(node.dbtype).add(node);
 
 			} catch (MalformedURLException e) {
-				System.err.println("Nodo mal especificado (URL??)");
+				System.err.println("Nodo " + n.get("name") + " mal especificado (URL??)");
 				log.log(Level.WARNING, "Incorrect node specification. Check URL for node" + n.get("name"));
 			}
 		}
@@ -75,6 +75,8 @@ public class Cluster {
 
 		if (declaredNodes.get(DBType.MASTER).size() != 1) {
 			System.err.println("No Master declared or more than one. Single Master is supported only at this release");
+			log.log(Level.SEVERE, "No Master declared or more than one. Single Master is supported only at this release");
+			log.log(Level.SEVERE, "Exiting");
 			return false; // Single Master supported at first release
 		}
 
@@ -85,6 +87,8 @@ public class Cluster {
 			return true;
 		}
 		System.err.println("Cannot set master at " + this.myMaster.name);
+		log.log(Level.SEVERE, "Cannot reach my master. A replica cannot operate with a living master");
+		log.log(Level.SEVERE, "Exiting");
 		return false; // Soy una réplica y el Master no está operativo
 	}
 
@@ -202,20 +206,4 @@ public class Cluster {
 		return ret;
 	}
 
-	public String clusterInfo() {
-		JsonObject jo = new JsonObject();
-		jo.addProperty("Cluster Master", declaredNodes.get(DBType.MASTER).get(0).name);
-		JsonArray ja = new JsonArray();
-		for (Node n: declaredNodes.get(DBType.REPLICA)) {
-			JsonObject joNode = new JsonObject();
-			joNode.addProperty("Replica Name", n.name);
-			joNode.addProperty("isALive", liveReplicas.contains(n));
-			joNode.addProperty("lastReached", n.lastReached);
-			joNode.addProperty("lastUpdated", n.lastUpdated);
-			joNode.addProperty("ticks since last seen", n.ticksSinceLastSeen);
-			ja.add(joNode);
-		}
-		jo.add("replicas", ja);
-		return jo.toString();
-	}
 }

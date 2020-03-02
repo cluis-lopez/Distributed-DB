@@ -1,0 +1,30 @@
+master1 : 2020-03-02 01:19:29 INFO Adding node replica1 as REPLICA
+master1 : 2020-03-02 01:19:29 INFO Adding node replica2 as REPLICA
+master1 : 2020-03-02 01:19:29 INFO master1 : This node acts as MASTER
+master1 : 2020-03-02 01:19:33 INFO Starting WatchDog daemon for cluster maintenance
+master1 : 2020-03-02 01:19:33 INFO Starting disk logger and net syncer
+master1 : 2020-03-02 01:19:33 INFO Starting syncer. Nett syncing each 30 seconds
+master1 : 2020-03-02 01:19:33 INFO Initializing databases
+master1 : 2020-03-02 01:19:33 INFO Initializing database SYS
+master1 : 2020-03-02 01:19:33 INFO Initializing database TestDB1
+master1 : 2020-03-02 01:19:33 INFO Database was not properly shutdown. Recovering from logs, if any
+master1 : 2020-03-02 01:19:33 WARNING Master trying to open non-existant logging file. Double check unless this is the first time you open the database
+master1 : 2020-03-02 01:19:33 INFO Master database TestDB1 opened with 2 objects
+master1 : 2020-03-02 01:19:33 INFO Object collection: User contains 12 objects
+master1 : 2020-03-02 01:19:33 INFO Object collection: Event contains 2 objects
+master1 : 2020-03-02 01:19:33 INFO Initializing database TestDB2
+master1 : 2020-03-02 01:19:33 INFO Database was not properly shutdown. Recovering from logs, if any
+master1 : 2020-03-02 01:19:33 WARNING Master trying to open non-existant logging file. Double check unless this is the first time you open the database
+master1 : 2020-03-02 01:19:33 INFO Master database TestDB2 opened with 2 objects
+master1 : 2020-03-02 01:19:33 INFO Object collection: Cars contains 1 objects
+master1 : 2020-03-02 01:19:33 INFO Object collection: Brands contains 1 objects
+master1 : 2020-03-02 01:19:33 INFO Starting the cluster HTTP server. Listening at 8081
+master1 : 2020-03-02 01:19:33 INFO Starting the disk syncer daemon
+master1 : 2020-03-02 01:19:33 INFO Syncing replicas every 30 seconds
+master1 : 2020-03-02 01:19:33 INFO Syncing to disk each log as it happens. No delays
+master1 : 2020-03-02 01:19:33 INFO Sending logging updates to replicas
+master1 : 2020-03-02 01:19:33 INFO Server started
+master1 : 2020-03-02 01:19:33 INFO Listening at port: 8080
+master1 : 2020-03-02 01:19:33 INFO No replicas to sync
+master1 : 2020-03-02 01:20:03 INFO Sending logging updates to replicas
+master1 : 2020-03-02 01:20:03 INFO No replicas to sync

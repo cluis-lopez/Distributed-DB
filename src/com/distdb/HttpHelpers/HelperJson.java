@@ -34,7 +34,7 @@ public class HelperJson {
 			resp[2] = ja.get(2).getAsString();
 		} else {
 			resp[0] = "FAIL";
-			resp[1] = "Answer bad format";
+			resp[1] = "Got answer with bad format";
 		}
 		return resp;
 	}

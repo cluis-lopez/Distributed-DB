@@ -121,15 +121,15 @@ public abstract class Database {
 	}
 
 	protected void updateProps() {
-		try {
-			FileWriter fw = new FileWriter(propsFile);
+		try (FileWriter fw = new FileWriter(propsFile)){
+			//FileWriter fw = new FileWriter(propsFile);
 			Gson json = new GsonBuilder().setPrettyPrinting().create();
 			fw.write(json.toJson(props, Properties.class));
 			fw.close();
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "Cannot prtoperly update the Properties file for " + dbname);
 			log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
-		}
+		} 
 	}
 
 	protected class Properties {

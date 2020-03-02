@@ -65,6 +65,7 @@ public class ReplicaDatabase extends Database {
 		else { // Error esta BBDD no se puede cargar
 			ret[0] = "FAIL";
 			ret[1] = "Cannot load " + dbname;
+			log.log(Level.WARNING, "Something is incorrect in the datafile structure for this database and cannot be loaded");
 			return ret;
 		}
 
@@ -76,10 +77,9 @@ public class ReplicaDatabase extends Database {
 			// Decode return logs
 			try {
 				JsonArray array = new JsonParser().parse(logs).getAsJsonArray();
-				log.log(Level.INFO, "Updating the database file with " + array.size() + " logged operations");
+				log.log(Level.INFO, "Updating the replica database with " + array.size() + " logged operations");
 				for (JsonElement jsonElement : array) {
 					JsonObject jobj = new JsonParser().parse(jsonElement.toString()).getAsJsonObject();
-					log.log(Level.INFO, "Updating " + dbname + " with " + jobj.get("op")+" "+jobj.get("objectName"));
 					if ((jobj.get("op").getAsString()).equals("insert")) {
 						Class<?> cl = Class.forName(defPath + "." + jobj.get("objectName").getAsString());
 						Object object = new Gson().fromJson(jobj.get("o"), cl);
@@ -89,7 +89,6 @@ public class ReplicaDatabase extends Database {
 						replicaUpdateRemove(jobj.get("objectName").getAsString(), jobj.get("id").getAsString());
 				}
 			} catch (JsonIOException | JsonSyntaxException | ClassNotFoundException e) {
-				System.err.println("No se ha podido aplicar el log a la base de datos " + dbname);
 				log.log(Level.SEVERE, "Cannot apply log to database " + dbname);
 				log.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
 				ret[0] = "FAIL";
@@ -101,7 +100,7 @@ public class ReplicaDatabase extends Database {
 		}
 		log.log(Level.INFO, "Replica database " + dbname + " opened with " + dbobjs.size() + " objects");
 		for (String s : dbobjs.keySet()) {
-			log.log(Level.INFO, "Object collection: " + s + " conteins " + dbobjs.get(s).size() + " objects");
+			log.log(Level.INFO, "Object collection: " + s + " contains " + dbobjs.get(s).size() + " objects");
 		}
 		return ret;
 	}
@@ -116,7 +115,6 @@ public class ReplicaDatabase extends Database {
 			o.close();
 		dbobjs = null;
 
-		System.err.println("Cerrando la base de datos replica " + dbname);
 		log.log(Level.INFO, "Closing replica database: " + dbname);
 
 		return ret;
@@ -170,7 +168,8 @@ public class ReplicaDatabase extends Database {
 		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
 			ret[0] = "FAIL";
 			ret[1] = "Something went wrong with the object to insert in the Database";
-			e.printStackTrace();
+			log.log(Level.WARNING, "Something went wrong trying to insert object of class "+cl.getSimpleName()+" into replica database "+ dbname);
+			log.log(Level.WARNING, Arrays.toString(e.getStackTrace()));
 			return ret;
 		}
 
@@ -221,7 +220,7 @@ public class ReplicaDatabase extends Database {
 		if (codes[0].equals("OK"))
 			return codes[2];
 		else {
-			log.log(Level.INFO, "Asking for log files to master: " + codes[0] + " : " + codes[1]);
+			log.log(Level.INFO, "Asking the Master for log files: " + codes[0] + " : " + codes[1]);
 			return "";
 		}
 	}
