@@ -18,7 +18,6 @@ import java.util.logging.Logger;
 
 import com.distdb.HttpHelpers.HeaderDecoder;
 import com.distdb.dbserver.Database;
-import com.distdb.dbserver.MasterDatabase;
 import com.distdb.dbsync.MasterSyncer;
 
 public class DataServerAPI implements Runnable {
@@ -119,7 +118,7 @@ public class DataServerAPI implements Runnable {
 			try {
 				Class<?> cl = Class.forName("com.distdb.HTTPDataserver.app." + res[2]);
 				Constructor<?> cons = cl.getConstructor();
-				ob = cons.newInstance(null);
+				ob = cons.newInstance((Object[]) null);
 				ob.getClass().getMethod("initialize", Logger.class).invoke(ob, log);
 				ret = (String[]) ob.getClass().getMethod("doPost", Map.class, String.class, String.class, MasterSyncer.class).invoke(ob,
 						dbs, res[1], body, dSync);

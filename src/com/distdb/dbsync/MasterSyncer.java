@@ -19,7 +19,6 @@ import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.Node;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -50,7 +49,7 @@ public class MasterSyncer implements Runnable {
 		dataPaths.remove(database);
 	}
 
-	public void enQueue(String operation, String database, String objectName, String id, Object o) {
+	public synchronized void enQueue(String operation, String database, String objectName, String id, Object o) {
 		// Inmediately record the log on disk
 		String loggingFile = dataPaths.get(database) + "/" + database + "_logging";
 		LoggedOps op = new LoggedOps(database, operation, objectName, id, o);

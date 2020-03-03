@@ -155,7 +155,7 @@ public class MasterDatabase extends Database {
 
 
 	@Override
-	public String[] insert(String objectName, Object object, boolean logging) {
+	public synchronized String[] insert(String objectName, Object object, boolean logging) {
 		String[] ret = new String[3];
 		Class<?> cl = object.getClass();
 		Field f = null;
@@ -193,7 +193,7 @@ public class MasterDatabase extends Database {
 	}
 
 	@Override
-	public String[] remove(String objectName, String id, boolean logging) {
+	public synchronized String[] remove(String objectName, String id, boolean logging) {
 		String[] ret = new String[3];
 		ret[0] = "FAIL";
 		ret[1] = "Object does not exist";

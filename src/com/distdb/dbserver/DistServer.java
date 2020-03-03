@@ -117,7 +117,7 @@ public class DistServer {
 			}
 			// Start the cluster daemon
 			log.log(Level.INFO, "Starting WatchDog daemon for cluster maintenance");
-			cluster.clusterWatchDog();
+			cluster.clusterWatchDog(props.pingTime, props.maxTicksDead);
 		}
 
 		// If I'm a replica. Joins the cluster

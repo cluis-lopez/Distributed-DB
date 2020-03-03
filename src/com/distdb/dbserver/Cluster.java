@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 
 import com.distdb.HttpHelpers.HTTPDataMovers;
 import com.distdb.dbserver.DistServer.DBType;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -60,10 +59,10 @@ public class Cluster {
 		}
 	}
 
-	public void clusterWatchDog() {
+	public void clusterWatchDog(int pingTime, int maxTicksDead) {
 		if (myType == DBType.REPLICA) //WatchDog only implemented in Masters
 			return;
-		WatchDog wd = new WatchDog(log, declaredNodes, liveReplicas, 30000, 2);
+		WatchDog wd = new WatchDog(log, declaredNodes, liveReplicas, pingTime*1000, maxTicksDead);
 		Thread wdt = new Thread(wd);
 		wdt.setName("Cluster WatchDog");
 		wdt.start();
@@ -102,7 +101,6 @@ public class Cluster {
 			return ret;
 		}
 		// I'm a Master so I must create a collection of living replicas to serve
-		String[] temp = new String[2];
 		for (Node n : declaredNodes.get(DBType.REPLICA)) {
 			if (n.fullCheck()[0].equals("OK")) {
 				liveReplicas.add(n);

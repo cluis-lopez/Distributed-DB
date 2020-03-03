@@ -3,6 +3,7 @@ package com.distdb.dbserver;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,7 +47,7 @@ public class WatchDog implements Runnable {
 						n.ticksSinceLastSeen++;
 						if (n.ticksSinceLastSeen > maxTicksDead) {
 							//Remove this database from the liveReplicas list
-							log.log(Level.WARNING, "Replica Database "+n.name+" is nor responding. Removing from cluster");
+							log.log(Level.WARNING, "Replica Database "+n.name+" is not responding. Removing from cluster");
 							for (int i = 0; i<liveReplicas.size(); i++) {
 								if (liveReplicas.get(i).name.equals(n.name)) {
 									
@@ -59,8 +60,11 @@ public class WatchDog implements Runnable {
 					}
 				}
 			}
+			
+			//Randomize the wait time in the range of pingTime + [0% 100%] of pingTime
+			int waitTime = pingTime + new Random().nextInt(pingTime);
 			try {
-				Thread.sleep(pingTime);
+				Thread.sleep(waitTime);
 			} catch (InterruptedException e) {
 				log.log(Level.SEVERE, "Interrupted exception in thread WatchDog");
 			}
