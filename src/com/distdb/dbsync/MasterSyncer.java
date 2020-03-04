@@ -17,8 +17,10 @@ import com.distdb.HttpHelpers.HTTPDataMovers;
 import com.distdb.HttpHelpers.HelperJson;
 import com.distdb.dbserver.Cluster;
 import com.distdb.dbserver.Node;
+import com.distdb.dbserver.DistServer.DBType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -70,8 +72,7 @@ public class MasterSyncer implements Runnable {
 		log.log(Level.INFO, "Syncing to disk each log as it happens. No delays");
 
 		while (keepRunning) {
-			log.log(Level.INFO, "Sending logging updates to replicas");
-			// System.err.println(getNetSyncerInfo());
+			log.log(Level.INFO, "Checking logging updates to replicas");
 			netSync();
 			try {
 				Thread.sleep(waitTime);
@@ -81,33 +82,38 @@ public class MasterSyncer implements Runnable {
 	}
 
 	public void netSync() {
-		if (cluster.liveReplicas.isEmpty()) { // Nothing to do if there're no replicas to sync
-			log.log(Level.INFO, "No replicas to sync");
+		if (cluster.liveReplicas.isEmpty() || logOps.isEmpty()) { // Nothing to do if there're no replicas to sync
+			log.log(Level.INFO, "No replicas to sync or pending Logs");
 			return;
 		}
-		long oldestUpdate = System.currentTimeMillis();
-		int smallerIndex = 0;
+		
+		System.err.println("Before syncing:\n" + getNetSyncerInfo());
+		
+		boolean removalLog = true;
 		for (Node n : cluster.liveReplicas) { // Let's update each replica
-			// cluster.liveReplicas.subList(0, 5).clear(); how to remove several list
-			// entries
+			if (n.lastUpdated > logOps.get(logOps.size()-1).timeStamp)
+				continue; // If this node was updated later than last log we may save time
 			List<LoggedOps> tempList = new ArrayList<>();
-			if (n.lastUpdated < oldestUpdate)
-				oldestUpdate = n.lastUpdated;
 			for (int i = 0; i < logOps.size(); i++) // Recorremos la lista de operaciones pendientes
-				if (logOps.get(i).timeStamp < n.lastUpdated)
-					smallerIndex = i;
-				else
+				if (logOps.get(i).timeStamp > n.lastUpdated)
 					tempList.add(logOps.get(i));
 			if (!tempList.isEmpty()) {
 				log.log(Level.INFO, "Sending replica " + n.name + " " + tempList.size() + " logged operations");
-				updateNode(n, tempList);
-			}
+				if (! updateNode(n, tempList)) {
+					log.log(Level.WARNING, "Failing to update replica " + n.name);
+					removalLog = false; // Some replica node has failed to update so we cannot remove the log
+				}
+			}	
+			System.err.println("Replica "+n.name +" removalLog: "+removalLog);
 		}
 		
-		logOps.subList(0, smallerIndex).clear(); // Trim the delayed ops list
+		if (removalLog)
+			logOps.clear();// Clears the delayed ops list
+		
+		System.err.println("AFTER syncing:\n" + getNetSyncerInfo());
 	}
 
-	private void updateNode(Node n, List<LoggedOps> ops) {
+	private boolean updateNode(Node n, List<LoggedOps> ops) {
 		Gson json = new Gson();
 		java.lang.reflect.Type dataType = new TypeToken<List<LoggedOps>>() {
 		}.getType();
@@ -118,10 +124,13 @@ public class MasterSyncer implements Runnable {
 		log.log(Level.INFO, "Sending : " + jo.toString() + " updates to: " + n.url);
 		String ret = HTTPDataMovers.postData(log, n.url, "", "sendUpdate", jo.toString());
 		String[] codes = HelperJson.decodeCodes(ret);
-		if (!codes[0].equals("OK"))
+		if (!codes[0].equals("OK")) {
 			log.log(Level.WARNING, "Logging to replica " + n.name + " FAILED :" + codes[1]);
-		else
+			return false;
+		} else {
 			n.lastUpdated = System.currentTimeMillis();
+			return true;
+		}
 	}
 
 	private boolean appendJson(String loggingFile, LoggedOps objectToAppend) {
@@ -181,6 +190,10 @@ public class MasterSyncer implements Runnable {
 		// Returns information from the netsync mem structuture
 		JsonObject jo = new JsonObject();
 		jo.addProperty("In-Mem pending Ops", logOps.size());
+		if (! logOps.isEmpty())
+			jo.addProperty("Lastest logged op", logOps.get(logOps.size()-1).timeStamp);
+		else
+			jo.addProperty("Lastest logged op", 0);
 		Set<String> loggedDBs = new HashSet<>();
 		for (LoggedOps op : logOps)
 			loggedDBs.add(op.database);
@@ -200,6 +213,15 @@ public class MasterSyncer implements Runnable {
 			jo.addProperty("In.Mem pending insertions for database " + database, inserts);
 			jo.addProperty("In.Mem pending removals for database " + database, removes);
 		}
+		JsonArray ja = new JsonArray();
+		for (Node n: cluster.declaredNodes.get(DBType.REPLICA)) {
+			JsonObject jo2 = new JsonObject();
+			jo2.addProperty("name", n.name);
+			jo2.addProperty("isLive", n.isLive);
+			jo2.addProperty("lastUpdated", n.lastUpdated);
+			ja.add(jo2);
+		}
+		jo.add("ReplicaNodes", ja);
 		return jo.toString();
 	}
 
